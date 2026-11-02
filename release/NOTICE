@@ -1,0 +1,17 @@
+Vistara AI — modified distribution of NanoBrowser
+
+Original project: NanoBrowser, https://github.com/nanobrowser/nanobrowser
+Pinned source: 19dc8e8a9be6ed06c0ef9ec7de8d84bf6a88c458
+Original source is licensed under the Apache License, Version 2.0 (see LICENSE).
+Original copyright and applicable third-party notices remain applicable.
+
+Vistara AI modifications, 2 November 2026: user-facing branding, original Vistara
+logo/assets and light/dark theme, own project/feedback links, disabled production
+analytics, removed original uninstall-feedback destination, documentation and
+verification, the necessary React build-compiler compatibility fix, and bounded autorun cleanup. Modified-file inventory is in docs/CHANGED_FILES.md; modified code
+files also carry a prominent Vistara change notice. The browser-control, agent,
+provider, safety and fixture architecture is derived from the pinned source.
+
+Vistara AI is an independent modified distribution. NanoBrowser's maintainers do
+not endorse this product. No NanoBrowser logos or trademarks are used as Vistara's
+product identity. Original project references are retained solely for attribution.

@@ -1,19 +1,30 @@
-# Vistara AI — M2.1 Provider Hub (0.2.1)
+# Vistara AI
 
-Existing Chrome side-panel assistant and scoped browser tools, now with dynamic BYOK provider profiles. Native Gemini and Anthropic; shared OpenAI-compatible Chat Completions for Groq, OpenAI, OpenRouter, DeepSeek, Together, Fireworks, Cerebras, Mistral and custom endpoints. Separate Chat/Tasks defaults, explicit endpoint grants and independent text/stream/tool diagnostics. No provider availability/free-tier guarantee.
+A source-based rebrand of NanoBrowser at commit `19dc8e8a9be6ed06c0ef9ec7de8d84bf6a88c458`, licensed under Apache-2.0. This rebuild uses the actual upstream application and browser-control engine, not the old Vistara M2.1 engine. No GitHub fork was created. The existing Vistara repository/history and an M2.1 backup branch are retained.
 
-Release deliverables: `release/Vistara-AI-M2.1-Chrome.zip`, `release/Vistara-AI-M2.1-Source.zip`, `release/M2.1-TEST-REPORT.md` and checksums. The user explicitly authorized M2.1 GitHub delivery to this public repository. Earlier M2 artifacts remain for rollback.
+The upstream architecture and user experience remain: one agent loop, Vercel AI SDK providers, Puppeteer frame management, stable browser element refs, Chrome Debugger/CDP actions, receipts and post-action checks. The side panel includes model/reasoning selection, Ask/Auto permissions, activity and conversations, shortcuts, attachments, file upload/save, voice model input, and responsive light/dark themes. Support is limited to what the pinned source implements; native/live behavior must be verified separately.
 
-- [Download M2.1 Chrome extension ZIP](https://github.com/smelld41rr/Vistara-AI-Agent/raw/refs/heads/main/release/Vistara-AI-M2.1-Chrome.zip)
-- [Download M2.1 editable Source ZIP](https://github.com/smelld41rr/Vistara-AI-Agent/raw/refs/heads/main/release/Vistara-AI-M2.1-Source.zip)
-- [Test report](release/M2.1-TEST-REPORT.md) · [SHA256 checksums](release/SHA256SUMS-M2.1.txt)
+Vistara changes: Vistara name/logo, purple/yellow palette, branded translations, own untracked project links, no production analytics, no original uninstall-feedback form, and own feedback destination. Original source attribution remains in NOTICE, LICENSE and Settings → About. No upstream endorsement is implied. No Vistara backend/accounts/subscription were added.
 
-Extract the Chrome ZIP and load/reload its manifest folder at `chrome://extensions`. See [installation and usage](docs/PROVIDER_HUB_USAGE.md), [compatibility matrix](docs/PROVIDER_COMPATIBILITY.md), [architecture](docs/PROVIDER_ARCHITECTURE.md), [test report](docs/M2.1-TEST-REPORT.md), [native acceptance checklist](docs/M2.1-NATIVE-VERIFICATION.md) and [limitations](docs/KNOWN_LIMITATIONS.md).
+## Downloads
 
-Keys remain in trusted extension session storage by default, local persistence only on explicit opt-in. No keys in pages/exports. Existing Gemini/Groq profiles, keys and IndexedDB conversations migrate without deletion. Changing endpoint/model/key invalidates tool proof. Browser tools require passed text AND no-op function-result tests plus existing site consent/fresh action approvals. Credential entry, arbitrary JavaScript, CAPTCHA/security bypass and silent cross-provider history transfer remain blocked. Chat stays read-only, page context OFF by default.
+- [Chrome extension ZIP](https://github.com/smelld41rr/Vistara-AI-Agent/raw/refs/heads/main/release/Vistara-AI-NanoBrowser-Chrome.zip)
+- [Complete editable Source ZIP](https://github.com/smelld41rr/Vistara-AI-Agent/raw/refs/heads/main/release/Vistara-AI-NanoBrowser-Source.zip)
+- [Unpacked extension](dist/) — download the repository ZIP, extract it, then load this folder in Chrome.
+- [Actual test report](release/TEST_REPORT.md) · [Native acceptance checklist](release/NATIVE_VERIFICATION.md) · [SHA256 checksums](release/SHA256SUMS-NanoBrowser-Rebuild.txt)
 
-**Verification boundary:** unit/integration and actual DOM/compiled UI fixture tests use mocked Chrome privilege APIs and provider HTTP. Live providers are UNVERIFIED; native installed-extension testing is BLOCKED by managed browser policy. No policy bypass. User-reported M1 Chrome checks are separate historical evidence. No M3, workflows/schedules, deployment or store publication.
+805 unit tests passed; 4 live-provider tests skipped. Native Chrome/browser-render checks are blocked by this environment and remain unverified; no live GitHub/WayHome task completion is claimed.
 
-Development: Node >=24.15, npm, Python 3 for ZIP packaging, Chromium for fixtures. `npm ci`; `npm run typecheck`; `npm run lint`; `npm test`; `npm run build`; `npm run test:e2e`; `npm run test:m2`; `npm run test:m21`; `node scripts/security-scan.mjs --m21`; `npm run zip:m21`. Load `.output/chrome-mv3`. Browser tests need localhost sockets and Chromium (`CHROMIUM_PATH`, default `/usr/bin/chromium`). No live automated requests without supplied credentials AND explicit approval.
+## Development
 
-Repository history and earlier M2 reports/artifacts are retained. Current instructions supersede historical Gemini-only Tasks/setup statements in earlier milestone documents.
+Node >=24.22.1 and pinned pnpm 10.34.7. `corepack enable`; `pnpm install --frozen-lockfile`; `pnpm type-check`; `pnpm lint`; `pnpm test`; `pnpm build`; `pnpm zip`. Built unpacked extension: `dist/`; default upstream ZIP output: `dist-zip/`. Supported native checks: `pnpm autorun <checks>`; see fixtures/autorun.mjs and CONTRIBUTING.md. Use Chrome/Edge 125+. Do not bypass administrator policies or use remote CDP as a substitute for chrome.debugger.
+
+## Install
+
+Extract the supplied Chrome ZIP into a permanent folder. Open chrome://extensions → Developer mode → Load unpacked → choose the folder containing manifest.json. Open the sidebar from the toolbar; configure your own provider/model in Settings. Read the permission/privacy disclosures before allowing automation. Ask mode is the default; payment/access/secret-entry steps require the user as upstream specifies. Keys remain local and go only to selected model endpoints. Provider/voice requests may incur their own account costs; no credentials or live paid tests are supplied by this project.
+
+Old M2.1 profiles/history are **not** silently imported into the different upstream schema. Back up/export old conversations before changing installations; the original data is not erased by this source rebuild. The old code is retained in local backup branch `backup/vistara-m21-before-nanobrowser-20261102` and GitHub history at commit `c35898d0ddc11765f0731f28d7ad7994ae4b5bb0`. Legacy files/releases are removed from the current main tree. Unpacked extension IDs/storage can change when installing from another folder.
+
+See docs/TEST_REPORT.md, docs/NATIVE_VERIFICATION.md, docs/UPSTREAM_PROVENANCE.md and docs/CHANGED_FILES.md for actual results and boundaries. The user authorized replacing the existing GitHub main tree with this rebuild. No fork, deployment or store publication.
+
+Optional source-release audit (from a Git checkout with the pristine pinned source available): `python3 scripts/package-rebuild.py --upstream-dir /path/to/nanobrowser-source`. Normal build/ZIP commands do not need the upstream comparison directory.

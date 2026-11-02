@@ -1,0 +1,28 @@
+{
+  "status": "PASS",
+  "artifacts": [
+    {
+      "file": "Vistara-AI-NanoBrowser-Chrome.zip",
+      "bytes": 1096219,
+      "entries": 39,
+      "sha256": "db7ea257b0ab38ae7b2bffeeb444cb57ffeda2aafca4de417076bb8d533943d8",
+      "integrity": "PASS"
+    },
+    {
+      "file": "Vistara-AI-NanoBrowser-Source.zip",
+      "bytes": 1203249,
+      "entries": 504,
+      "sha256": "1688f4ebe1156e4ae82626e93cfdec16110dadc4eb73dd4a1254c08fe733d364",
+      "integrity": "PASS"
+    }
+  ],
+  "sourceFiles": 504,
+  "upstream": "19dc8e8a9be6ed06c0ef9ec7de8d84bf6a88c458",
+  "browserControlEquivalentAfterBrandNotices": true,
+  "apacheLicenseUnchanged": true,
+  "originalServiceDestinationsAbsentFromBuild": true,
+  "sourceHistoryAndZipSecretPatternFindings": [],
+  "nativeChrome": "BLOCKED/UNVERIFIED",
+  "liveProviders": "UNVERIFIED",
+  "limits": "Static scans are heuristic; no native/live success is inferred from source or unit tests."
+}

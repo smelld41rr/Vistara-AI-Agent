@@ -1,0 +1,17 @@
+{
+  "extName": {
+    "message": "Vistara AI"
+  },
+  "extDescription": {
+    "message": "An AI agent that works in your browser, in a side panel beside the page"
+  },
+  "actionTitle": {
+    "message": "Open Vistara AI"
+  },
+  "commandOpenPanel": {
+    "message": "Open the Vistara AI panel"
+  },
+  "menuAskAboutSelection": {
+    "message": "Ask Vistara AI about this"
+  }
+}

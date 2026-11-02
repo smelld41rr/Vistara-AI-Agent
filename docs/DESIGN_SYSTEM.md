@@ -1,3 +1,0 @@
-# Design system
-
-Original concept: a quiet ivory/ink workspace with forest-green action color, fine borders, generous spacing and restrained leaf/orbit motifs. No competitor UI copied. All CSS tokens are in src/styles/app.css: semantic background/surface/text/muted/accent/border colors, radius, subtle shadow and system-font typography. Font size uses rem relative to explicit user preference; compact mode reduces spacing. Light/dark/system media behavior. Motion respects prefers-reduced-motion. Keyboard focus rings and ARIA labels on icon buttons. Responsive coverage 320, 400, 480 px. No remote fonts/assets. Screenshot provenance is separate from native-extension claims.

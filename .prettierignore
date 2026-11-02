@@ -1,0 +1,11 @@
+dist
+node_modules
+.wxt/
+.output/
+pnpm-lock.yaml
+*.md
+fixtures/pages
+work/
+release/
+dist-zip/
+coverage/

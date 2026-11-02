@@ -1,32 +1,22 @@
-# Native extension verification boundary
+# Native Chrome / live acceptance
 
-The production extension was launched through Playwright's persistent Chromium context with standard `--load-extension` and `--disable-extensions-except` flags. The test does not modify browser policies. It excludes Playwright's default `--disable-extensions` flag so that a normal unpacked extension can load on an unmanaged browser.
+Status: BLOCKED / UNVERIFIED. The unmodified supported autorun launch attempted `appearance,providers-test,panel-run` with installed Chromium 154.0.8037.57. It aborted with SIGABRT before any reports: the installed SUID sandbox helper is not configured with its required ownership/mode. Managed policy also sets ExtensionInstallBlocklist=["*"]. Neither the sandbox/helper nor extension policy was changed/bypassed for native verification. No native check passed.
 
-Observed environment policy from `/etc/chromium/policies/managed/extensions.json`:
+A separate compiled-UI headless fixture attempt produced no DOM/screenshot; a data-URL renderer probe also failed with GPU/zygote launch errors. No screenshot or UI browser pass is claimed. Unit tests, build, source/static checks are separate evidence. The autorun harness was fixed to report signal exits and bound cleanup instead of hanging.
 
-```json
-{"ExtensionInstallBlocklist":["*"],"ExtensionInstallSources":[]}
-```
+No live model API key was supplied and no live provider requests were authorized. The four upstream live-provider unit checks remain skipped. Do not infer live success from simulated SDK/unit responses.
 
-No production Vistara service worker appeared within the bounded wait. The native test opened `chrome://policy` and records the policy evidence in `docs/browser-results.json`. **Status: BLOCKED.** This is not a native installation pass. The administrative configuration was left unchanged.
+On an authorized Chrome/Edge 125+ installation, install/reload dist/ or the extracted Chrome ZIP, preserving your old data backup. The manifest now requires upstream Debugger, tabs, broad page access and other listed permissions; this is a substantial change from M2.1. Review/accept the real Chrome prompt. Never bypass administrator controls.
 
-The first launch in the restricted command sandbox could not open Chromium sockets or bind the local fixture server (`EPERM`). Rerunning the same test with the supported execution environment network permission allowed Chromium and loopback fixture serving; the extension restriction remained. This did not grant or alter Chrome extension policy.
+Every item below remains UNVERIFIED here:
 
-`npm run test:e2e` runs the reproducible browser harness. Its mock-browser category executes real production React and page-reader bundles against a local fixture server with an explicitly scripted Chrome/background substitute. The real IndexedDB check bundles the production storage module into a temporary test-only IIFE; only Chrome storage is mocked, while IndexedDB transactions and a second independent database connection are real. Those checks do not establish privileged Chrome API behavior.
+1. Install; toolbar/sidebar/settings; dark/light and narrow layouts, three languages, keyboard shortcuts.
+2. Configure a real provider/model; model/reasoning selection; genuine tool call and observation/result loop. Test voice only with your explicitly configured voice model/microphone permission.
+3. Real navigation, reading, click, type, keyboard, hover, scroll, wait and multi-tab actions. Confirm actual receipts distinguish dispatch, reaction and expected result.
+4. Same/cross-process iframes, open shadow DOM, stale refs and dynamic pages; screenshots/vision only where supported.
+5. Ask/Auto/site Ask/Allow/Block behavior. Verify secret/payment/access steps hand over rather than allowing autonomous approval. Test consequential write confirmations and prompt-injection boundaries.
+6. Stop/Resume/Continue/compaction, conversation/activity history, shortcuts, file attachments/upload/save, local storage/delete, worker restart and duplicate-action prevention.
+7. Inspect network: no PostHog/original uninstall-feedback service, original website UTM links or unintended model endpoints. Production analytics remain disabled even with old build variables.
+8. Primary acceptance task: “Open https://github.com/danishcodepy, click Repositories, find WayHome, open the frontend folder, inspect vercel.json if it exists and explain the contents.” Record observed URLs, actual DOM/file content and final response. If repository/folder/file is absent, report that rather than inventing it.
 
-## Manual Windows checklist
-
-Use a personal or otherwise authorized unmanaged Chrome profile. Do not change an organization policy to make this test pass.
-
-1. Extract `Vistara-AI-Chrome.zip` into a persistent folder. Confirm `manifest.json` is directly inside it.
-2. Open `chrome://extensions`, enable Developer mode if permitted, choose Load unpacked and select that folder.
-3. Confirm there are no extension errors. Verify the Vistara toolbar popup opens and its Open Vistara AI button opens the actual side panel.
-4. Confirm the initial page-context toggle is OFF. Preview an ordinary website only after invoking the extension in that tab. Confirm internal pages fail with an actionable message.
-5. In Settings, add a user-owned Gemini key in session storage. Test the connection, grant only the Gemini API origin, discover models, and explicitly choose a supported model. Review current provider free-tier terms; no unlimited usage is promised.
-6. Accept the Gemini disclosure and save preferences. Send a text-only message. Turn on page context deliberately and summarize the actual page. Confirm source URL and facts match the page.
-7. Stop generation mid-response. Reload the background service worker during a request and confirm history is marked interrupted; no request should replay automatically.
-8. Verify provider consent is independent by switching to Groq. No request should be sent without its own key, provider permission and consent.
-9. Verify history restore/export/delete and Clear all local data. Close and reopen Chrome to confirm a session-only key is gone.
-10. Check keyboard navigation, light/dark/system themes and 320–480px panel widths on Windows. Real screen-reader and native side-panel user-gesture behavior remain manual.
-
-Gemini/Groq live network calls were **NOT RUN** in this build environment because no user API key was supplied. A mock provider is not a live provider test.
+Record OS/Chrome/version/model/date and pass/fail evidence, with keys and private page content removed. Do not call task success without observable results. Stop cannot undo actions already dispatched.

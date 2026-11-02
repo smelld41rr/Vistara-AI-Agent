@@ -1,84 +1,135 @@
-# Vistara AI — project rules
+# AGENTS.md
 
-Source: user-supplied master build specification, read in full together with the 11-page PDF.
+This file provides guidance to AI coding assistants (e.g., Claude Code, GitHub Copilot, Cursor) when working with this repository.
 
-## 4. HONESTY AND REPORTING RULES (highest priority, override everything else)
-1. Never fake progress, results, screenshots, test outcomes or completion.
-2. Never claim a test passed unless you executed it and saw it pass. Record the exact command and result summary in docs/TEST_REPORT.md.
-3. Give every capability one of these status labels in docs/PROGRESS.md: DONE_VERIFIED, DONE_UNVERIFIED, PENDING, BLOCKED (with the reason). Generated code alone is never DONE_VERIFIED.
-4. Distinguish clearly: unit tests, mock-browser tests, real-extension tests in Chrome, live-website checks, and tests blocked by the environment. Never present a fixture screenshot as a real Chrome screenshot.
-5. If an environment restriction blocks a step (for example, cannot load an unpacked extension because of administrator policy), document the blocker, provide a manual verification checklist, and continue only with independent work. Never bypass the policy and never mark the blocked item as complete.
-6. Never claim the extension can perform an action that is not implemented and tested. Document honest limits in docs/KNOWN_LIMITATIONS.md.
+## Project Overview
 
+This repository is the next version of Nanobrowser, an AI web automation Chrome extension, rebuilt from the ground up. It has two parts:
 
-## 5. WORKING PROCESS
-1. Inspect the working directory first. If a project exists, read it, preserve unrelated files and avoid overwriting work. If empty, create a new project.
-2. Research current official documentation for WXT, Chrome extension APIs (sidePanel, storage, scripting, alarms, tabs, permissions), @google/genai (models listing, generateContent, function calling, structured output) and the Groq API. Record verified versions and API patterns in docs/DECISIONS.md.
-3. Write docs/ARCHITECTURE.md, docs/ROADMAP.md and docs/TEST_PLAN.md before heavy coding. Document the reasoning before any major architectural change.
-4. Work milestone by milestone (Section 18). Finish and verify one milestone before starting the next. Do not build everything as one untested block.
-5. Maintain these living files at all times: docs/PROGRESS.md (status of every capability and milestone, next unfinished item), docs/DECISIONS.md (context, choice, alternatives, consequences), CHANGELOG.md, docs/TEST_REPORT.md. After each milestone, update them and create a git commit locally (never push).
-6. If your context is reset or you resume later, read AGENTS.md, docs/PROGRESS.md and docs/DECISIONS.md first and continue from the first unfinished item. Create AGENTS.md at the start from Sections 4, 5, 6, 8, 9 and 15 of this specification so future sessions inherit the rules.
-7. Definition of done for every tool or feature: Zod schema, implementation, unit test, fixture-site test, documentation entry, honest status label.
-8. STOP AND ASK the user before: adding or widening a manifest permission, adding a dependency larger than 200 KB or needing a paid service, changing the approval/risk policy, changing the provider interface, deleting existing user files, or doing anything outside this specification.
-9. Do not deploy, publish to the Chrome Web Store, or push to any remote repository without explicit approval. Do not expose secrets. Do not push source code or ZIPs to GitHub.
-10. Do not stop at planning. Implement working code and progress as far as the environment and verification allow.
+- **The browser control layer**: a deterministic layer that observes a page, acts on it, and reports what happened. It is part of the extension, and its client is the extension's own agent, in-process.
+- **The extension** that end users run: the side panel, the one agent that works in it, model providers, and the features around them. It sits on top of the layer.
 
+## Scope
 
-## 6. ENGINEERING RULES
-- Real implementation, not placeholder UI. Every visible button must work or be removed; unbuilt screens show an honest "Not built yet" state.
-- Keep browser automation provider-independent. Keep user credentials out of content scripts.
-- Validate every AI-generated tool call. Bounded timeouts and retry limits everywhere.
-- Handle Manifest V3 service-worker lifecycle: it can be suspended at any time.
-- Do not load remotely hosted executable code. No hidden telemetry.
-- Clean module boundaries, typed contracts between modules, no giant files with unrelated code. Reusable components are independent.
-- Preserve existing functionality during UI changes (regression tests).
-- Optimize AI token use and avoid unbounded DOM scanning.
+- **Built and maintained:** the browser control layer, a simple Chrome extension for testing it by hand (the test panel), fixture pages, unit tests, and the automated checks.
+- **Built and maintained:** the extension. Its first release has a side panel per tab, one agent loop, model providers through the Vercel AI SDK, the permission modes, shortcuts, attachments (images and text), upload into pages, saved files, voice input through OpenAI's or Gemini's voice model, three UI languages (English, Simplified Chinese, Traditional Chinese), a glowing border on the pages the agent works on (with a switch in Settings), and an optional project-feedback card. Vistara production analytics are disabled; only explicitly configured local fixture tests exercise analytics plumbing.
+- **Not in the first release:** for example skills the model loads, site notes, saved memory, the in-page Stop pill, PDF and Office parsing, the text tool-call parser, scheduled tasks. Do not add any of these unless asked.
+- **Not in scope:** an MCP bridge, browsers other than Chrome and Edge, a planner and navigator design, several cooperating agents.
 
+## Fixed design constraints
 
-## 8. API KEY MANAGEMENT (Bring Your Own Key)
-- Never embed a shared developer key. Keys must never appear in source, Git history, logs, exports, URLs, content scripts or any page context.
-- Default storage: chrome.storage.session (ephemeral, cleared when the browser closes), with access restricted to trusted extension contexts (setAccessLevel). Optional local persistence only after an explicit disclosure that browser-local secrets are not equivalent to a server-side vault.
-- Keys are used only from the background service worker. Content scripts and the page never receive them.
-- UI: add, replace, remove, test connection, current provider, current model, connection status, quota-error guidance.
-- Redact keys in every error, log, trace and export path, and unit-test the redaction (including keys embedded in URLs and error objects).
-- Document in docs/SECURITY.md the limits of a client-side BYOK model for any future public distribution, and describe an optional secured-backend design as a non-mandatory future option. Do not build that backend.
+These are settled and not open for redesign.
 
+For the layer:
 
-## 9. CLOUD AI PRIVACY
-Before any page content is sent to Gemini or Groq:
-- Tell the user in the UI that content is processed by an external provider and is not local. Disclose that free-tier prompts may be used by the provider to improve its products, according to the provider's current terms, and link the provider's terms page.
-- Require one-time per-provider consent plus a per-conversation current-page-context toggle that is OFF by default.
-- Minimize what is sent: relevant sections only, visible readable text, concise structured snapshots. Never auto-include unrelated tabs.
-- Redact known sensitive fields (passwords, tokens, OTPs, card numbers, hidden inputs) before transmission. Never claim cloud processing is local or fully private.
-- Local data stays local by default. No synchronization, no hidden telemetry, no collection of browsing history unrelated to the requested task. Provide deletion controls.
+- **The layer is part of a Chrome extension, not a standalone tool.** It is not a runtime like agent-browser: no CLI, no daemon, no socket of its own, no launching or attaching to a browser, no remote CDP. Applications outside the extension will use it through an MCP bridge in future, and only that way. Do not add any other external entry point.
+- **`chrome.debugger` is the only way to reach CDP.** The product is a Chrome extension. Do not add CDP over WebSocket, not even for tests.
+- **Puppeteer is the frame manager.** It detects frames, including out-of-process iframes, and tracks their sessions and navigation. Do not build a parallel frame or session registry from CDP events.
+- **Elements are never found through Puppeteer.** No selectors, `ElementHandle` clicks or selector-based `evaluate`. Element commands are raw CDP commands sent to the session of the frame Puppeteer reports.
+- **No model inside the layer.** The layer is deterministic. Anything that needs an LLM belongs to an agent above it.
 
+The layer's invariants hold for all code in it. Read them before changing perception or interaction code:
 
-## 15. SECURITY
-This is a high-trust extension. Security is not optional and is enforced in deterministic application code, never only in prompts.
+1. **One identity.** An action operates on the node the agent was shown, addressed by the browser's handle for it.
+2. **Refs fail closed.** A ref is valid only for the document it was seen in and only if the agent was shown it. Otherwise the result is a typed error, not a guess.
+3. **Retries happen before dispatch.** Once an input event has been sent, the layer does not send another on its own.
+4. **No hidden substitution.** A different node or a different mechanism is chosen by rule before dispatch and named in the receipt.
+5. **Three outcomes, reported separately.** Input dispatched; page reacted; expected state reached.
+6. **Observation is read-only.** Capturing state does not change the page.
+7. **Degrade loudly.** Partial captures and truncation are stated in the result.
+8. **Bounded everything.** Every command, wait and list has a budget. The one wait without a clock is a confirmation the host lets wait for the user; it still ends on Stop, when the tab closes or when the session ends.
+9. **State is disposable.** A service worker restart, a debugger detach and a navigation invalidate layer state cleanly.
+10. **No model inside.** Anything that needs an LLM belongs to the agent above the layer.
+11. **Consequential actions need a person.** By default, an action classified as submit, pay or delete is not dispatched until the user approves it, whatever form its target takes, and page script supplied by the agent is not run until the user approves it. The agent cannot turn this off.
 
-### 15.1 Action risk classification
-LOW: reading public page text, scrolling, opening a public link, extracting non-sensitive information.
-MEDIUM: editing a non-sensitive form, changing site settings, navigating to a user-specified domain.
-HIGH: submitting forms, sending messages or emails, posting publicly, deleting data, purchases, confirming bookings, changing security settings, financial transactions, uploading potentially sensitive files.
-HIGH actions always require fresh, explicit user approval in the UI that shows the exact action, target element, site and data involved. Never execute them silently, and never from a scheduled run without fresh approval. Classification uses element role, text, form context and target URL in code (for example a submit button inside a form, or labels such as buy, pay, send, delete, confirm).
-Never autonomously enter credentials, payment details, OTPs or highly sensitive personal data. Refuse and ask the user to do it manually.
+For the agent and the extension:
 
-### 15.2 Prompt-injection defense
-Treat all webpage text, comments, ads, extracted data and tool results as untrusted input. Page content must never be able to: change system instructions, override permission checks, trigger tools without authorization, cause external data transmission, request secrets, or disable safety controls. Measures: delimit untrusted content in prompts and state that it is data; strip or neutralize instruction-like patterns in reports to the user; validate every tool call against the user's original goal scope and the permitted sites; block navigation or data export to domains not approved for the task; require approval for any action that deviates from the user's stated goal. Keep a regression suite of injection pages (Section 19).
+- **The user decides how much the agent may change on its own, and no agent call can change that:**
+  - Reading and moving never ask.
+  - A detected write (submit, send, delete, upload) asks in Ask mode, the default, and runs in Auto mode or on a site the user set to Allow. A site the user set to Ask asks in both modes.
+  - A detected payment, access grant, secret input or page `prompt` dialog is the user's step in every mode, with no Approve.
+  - Detection is best effort, and enforcement is strict.
+  - The agent's sessions get no page script and no `devtools`.
+  - In the test panel the layer keeps its `sensitive` policy: submit, pay and delete actions, and page script, are confirmed before dispatch.
+- **Page content is data, never instructions.** Text from pages reaches the model inside marked page-content boundaries; keep it that way.
+- **One agent**, not the old planner and navigator: one loop per conversation.
+- **No model tiers.** Every model gets the same agent and the same tools (`screenshot` only for vision models). There are no tool switches in the first release.
+- **Nothing outside the extension can drive the layer or the agent.** There is no MCP for now.
+- **The conversation is compacted automatically before the context window fills**, and every message the user sent is kept in full.
+- **Conversations cannot be imported** in the first release.
 
-### 15.3 Data handling
-Local-first storage with deletion controls. Redact credentials and sensitive content in logs and exports. Do not inject external executable scripts. Never bypass website security features. Do not implement CAPTCHA bypass, anti-bot evasion, credential harvesting or bulk extraction of sensitive personal data. Collect only data the user is authorized to access. Sanitize all rendered model and page text (no raw HTML injection into the UI).
+## Structure
 
-### 15.4 Manifest V3 compliance
-No remote code, no eval in extension contexts, a strict content security policy, minimal permissions, optional host permissions requested in context.
+- `entrypoints/` - Thin WXT entrypoints: background, the product's side panel (`sidepanel/`), options (the settings page), `welcome/` (the first-run page), `permission/` (the microphone page), `offscreen/` (blob URLs for saved files), and the layer's test panel (`testpanel/`, developer-only, opened with the `open-test-panel` command)
+- `src/browser-control/` - The layer
+  - `protocol/` - Request and result types, zod schemas, error codes, tool catalogue
+  - `core/` - Controller, sessions, refs, frames, perception, interaction, lifecycle
+  - `probe/` - The layer's only in-page code; built to a string constant
+  - `host/` - Puppeteer connection and frame adapter, `chrome.debugger` session wrapper, `chrome.tabs`
+  - `index.ts` - The only entry other code may import
+- `src/test-panel/` - The layer's test panel (React); a developer-only entrypoint, opened on a tab with the `open-test-panel` command (unbound by default; bind it in `chrome://extensions/shortcuts`)
+- `src/background/` - The layer's test extension in the worker: the test panel's messages and `UserPrompt`, and the automated checks and scenario sets that `pnpm autorun` runs (`checks/`, `scenarios/`). The product's controller is created in `src/extension/layer.ts`
+- `fixtures/` - Static test pages for the layer's and the extension's scenario sets, the fixture server (with a fake OpenAI-compatible model) and `autorun.mjs`
+- `README.md`, `CONTRIBUTING.md`, `PRIVACY.md`, `SECURITY.md`, `LICENSE`, `.github/` - The project's pages for users and contributors, the issue templates and the CI workflow (`.github/workflows/`). `PRIVACY.md` says what data leaves the browser and where it goes; a change to that updates it
+- `AGENTS.md` - This file; `CLAUDE.md` is a link to it
+- `.env.example` - Documents that production analytics are disabled, including with legacy build variables. No shared keys are configured.
 
+The extension:
 
-## Current execution scope
-The user has now explicitly reported manual M0/M1 Chrome/Gemini/selection verification and authorized M2 only. Preserve M0/M1; do not begin M3. M2 includes the requested bounded function-calling tool feedback cycle, not a generalized M3 planner. The requested initial stack and M0 permissions are part of the user-authorized build; the STOP-AND-ASK rule applies to additions or changes beyond this baseline. No remote publication. Existing /workspace/Vistara is unrelated and must remain untouched.
+- `src/agent/` - Loop, hooks, agent tools, prompts, context management, run records
+- `src/llm/` - Providers, model profiles, usage, retries, overflow detection
+- `src/store/` - IndexedDB schema and stores, settings, keys
+- `src/extension/` - Wiring in the worker: RunManager, PromptBroker, permissions, TabScope, downloads, notifications
+- `src/ui/` - Shared components, theme, the i18n runtime and the catalogues (`locales/`: English, Simplified and Traditional Chinese)
+- `src/side-panel/` - The chat UI
+- `src/options/` - The settings UI
 
-Latest explicit user authorization: keep smelld41rr/Vistara-AI-Agent PUBLIC; sanitized M2 source, tests, reports and release ZIP upload authorized after checks. This supersedes the earlier private-only request. No force push or unrelated-file deletion. No deployment or store publication.
+**Import rules:**
 
-## M2.1 superseding execution scope
-The current pasted user request explicitly authorizes a dynamic provider interface, native Gemini/Anthropic plus OpenAI-compatible adapters, profile migration and provider-origin optional access using the existing manifest baseline. It does not authorize M3. Preserve M0–M2. Latest M2.1 instruction: do not push GitHub without new approval; the previous M2 upload authorization does not authorize M2.1. No deployment or store publication. Automated provider requests must remain simulated without user credentials and explicit live-test approval.
+- Nothing under `src/browser-control/` imports from outside that folder, and other code imports the layer only through `src/browser-control/index.ts`.
+- `src/agent/` reaches Chrome APIs only through interfaces passed in by `src/extension/`.
+- `src/side-panel/` and `src/options/` never import `src/agent/` or `src/extension/`; they talk to the worker through one typed message protocol.
+- `src/llm/` knows nothing about browsers.
 
-Latest user instruction: "push on github" explicitly authorizes sanitized M2.1 source/tests/docs and release ZIP delivery to the existing PUBLIC smelld41rr/Vistara-AI-Agent repository. Preserve remote history/unrelated files and prior releases; no force push, deployment or store publication.
+## Toolchain
+
+The project is a single pnpm package built by WXT: Node 24 LTS, pnpm 10.34.7, WXT 0.21.4, TypeScript 6.0.3, Vitest 5.0.5, puppeteer-core ^25.16.0, zod 4.6.7, React 18.3.1. A patch or minor update is taken once the checks pass; a major update is evaluated and decided on its own.
+
+pnpm 10.34.7 is pinned in `package.json` (`packageManager`). If the global `pnpm` is a different version, run the scripts through `corepack pnpm <script>`.
+
+- `pnpm install` - Install dependencies (also runs `wxt prepare`)
+- `pnpm dev` - WXT development mode; load `dist/` unpacked in Chrome
+- `pnpm build` - Build the Chrome MV3 extension into `dist/`
+- `pnpm zip` - Build, then pack `dist/` into `dist-zip/nanobrowser-<version>.zip` (source maps left out) for a release or the Chrome Web Store
+- `pnpm type-check` - TypeScript type checking
+- `pnpm lint` - ESLint, including the import rules: the layer's (`src/browser-control/`) and the extension's (Import rules, above)
+- `pnpm test` - Unit tests (Vitest); tests live in `__tests__/` folders under `src/`
+- `pnpm prettier` - Format the repository
+- `pnpm fixtures` - Fixture server on port 8787 (localhost, 127.0.0.1 and [::1])
+- `pnpm install-chrome` - Install the current stable Chrome for Testing (never beta or canary) into `~/.cache/puppeteer`, then ask to remove every other build there so only that one is kept (nothing is removed without a terminal to ask in). Run it after cloning and to update Chrome; `pnpm autorun` starts only the build recorded there as stable (or `CHROME_PATH`)
+- `pnpm clean-chrome` - Ask, then remove the whole `~/.cache/puppeteer` (shared with other projects that use Puppeteer; they download their browser again)
+- `pnpm autorun <check>[,<check>...] [--args <json>] [--scale <n>] [--product-permissions]` - Build an autorun copy of the extension into `.output/autorun`, start the fixture server and Chrome for Testing (headless, plain process, no external CDP, `--use-mock-keychain`), run the named checks in the extension and print the reports. `--scale 2` runs Chrome with that device scale factor, as on a Retina display. The autorun copy requires the Chrome permissions the product only asks for (tab groups, notifications, downloads); `--product-permissions` builds with the product's permission lists into `.output/autorun-product`, for the `without-permissions` check. `pnpm autorun permission-warnings` checks that the product's manifest adds no install warning to the old version's; run it before every release. Results go to `fixtures/.results/` (ignored by git)
+
+CI (`.github/workflows/ci.yml`) runs `prettier --check`, `pnpm lint`, `pnpm type-check`, `pnpm test` and `pnpm build` on every push and pull request, on Ubuntu with the newest Node 24 and the pinned pnpm. Its actions are pinned to a commit, and its token can only read. The browser checks (`pnpm autorun`) and the checks that call real models (the evaluations, the model smoke run) are not in CI: they are run by hand, before a merge that touches what they cover and before a release.
+
+The extension's dependencies: `ai` with `@ai-sdk/anthropic`, `@ai-sdk/google` and `@ai-sdk/openai`, `idb`, `react-markdown` with `rehype-sanitize` and `remark-gfm`, and `@radix-ui/react-dialog`; `fake-indexeddb` is a development dependency for the store tests. Any other dependency is asked for first. Settings → About lists them with their licences, and a unit test keeps that list equal to `package.json`.
+
+## Working rules
+
+- Always use `pnpm`.
+- Chrome and Edge only; the automated checks run in Chrome. The extension is loaded unpacked from `dist/`.
+- One change per branch and pull request. Keep diffs scoped to it.
+- Ask before adding a dependency, renaming or moving files, or changing global configuration.
+- Pure functions get unit tests over recorded CDP payloads. Anything that needs a browser gets a fixture page and a scenario in the test panel.
+- Formatting: Prettier with 2 spaces, semicolons, single quotes, trailing commas, `printWidth: 120`. Use `import type` for type-only imports.
+- Comments say in plain words what the code does and why.
+- Never log, commit or expose credentials. Mask password, payment-card and one-time-code values wherever page content is returned.
+- Do not edit generated output (`dist/**`, `.wxt/**`).
+- Chrome for Testing must never reach the real macOS Keychain. Every launch of it, by `pnpm autorun` or any other script or by hand, passes `--use-mock-keychain`.
+
+## Vistara source rebuild authorization
+The user's full 2 November 2026 rebuild request authorizes replacing the old M2.1 application with this pinned NanoBrowser architecture, its existing dependencies and Chrome debugger/host permissions, and the specified Vistara branding/theme. No additional approval needed for those requested changes. Preserve CDP, Puppeteer, refs, receipts, verification, agent/provider architecture and safety policies. Remove original-product analytics/uninstall destinations. No GitHub fork, push, deployment or store publication. Never fake native/live checks; respect managed browser policies. Backup branch: backup/vistara-m21-before-nanobrowser-20261102. Implementation branch: rebuild/nanobrowser-vistara. Required attribution remains.
+
+Build compatibility correction authorized as strictly necessary: standard @vitejs/plugin-react 5.2.0 replaces SWC because its native cache rejects this managed filesystem. No runtime SDK/agent/CDP redesign. See docs/ARCHITECTURE.md. Chrome native sandbox/helper and managed extension restrictions remain unmodified.
+
+Latest user instruction explicitly authorizes pushing the sanitized NanoBrowser-based Vistara rebuild to smelld41rr/Vistara-AI-Agent and deleting old application/release files from the current repository tree. Preserve Git history with a normal commit, no force push or fork. Include new source, dist, release ZIPs, reports and legal notices; no deployment or store publication.

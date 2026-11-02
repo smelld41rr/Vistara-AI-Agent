@@ -1,0 +1,1 @@
+import"./_virtual_wxt-html-plugins-P2Xu9kJm.js";var e=new Set;chrome.runtime.onMessage.addListener((t,n,r)=>{if(t?.target===`offscreen`){if(t.type===`blob-url`){let n=URL.createObjectURL(new Blob([t.content],{type:t.mimeType}));e.add(n),r({url:n})}else t.type===`revoke`&&(URL.revokeObjectURL(t.url),e.delete(t.url),r({held:e.size}))}});

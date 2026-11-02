@@ -1,8 +1,0 @@
-{
-  "status": "PASS",
-  "sourceAndReportFiles": 112,
-  "historyCommits": 7,
-  "pendingDiffScanned": true,
-  "findings": [],
-  "limits": "Heuristic credential-pattern/filename scan, not a proof that every possible secret or personal fact is absent. Test-only synthetic credentials are intentional; source excludes actual profiles, credentials, caches and .env."
-}

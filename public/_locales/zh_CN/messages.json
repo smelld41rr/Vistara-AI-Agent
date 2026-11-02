@@ -1,0 +1,17 @@
+{
+  "extName": {
+    "message": "Vistara AI"
+  },
+  "extDescription": {
+    "message": "在你的浏览器中工作的 AI 智能体，位于页面旁的侧边栏中"
+  },
+  "actionTitle": {
+    "message": "打开 Vistara AI"
+  },
+  "commandOpenPanel": {
+    "message": "打开 Vistara AI 侧边栏"
+  },
+  "menuAskAboutSelection": {
+    "message": "向 Vistara AI 询问这段内容"
+  }
+}

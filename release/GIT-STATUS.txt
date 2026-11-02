@@ -1,0 +1,7 @@
+Local implementation branch: rebuild/nanobrowser-vistara
+Local source/delivery commit: 0a6f87c40162054c74f9512585e5f0ce8fb71c05
+Local Git status: clean
+Backup: backup/vistara-m21-before-nanobrowser-20261102
+GitHub replacement explicitly authorized: new source, dist and rebuild release artifacts only in current main tree; prior Git history retained.
+No GitHub fork, deployment or store publication.
+Native Chrome/live acceptance remains BLOCKED/UNVERIFIED.

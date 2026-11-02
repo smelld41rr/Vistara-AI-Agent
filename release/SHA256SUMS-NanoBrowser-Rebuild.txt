@@ -1,0 +1,2 @@
+db7ea257b0ab38ae7b2bffeeb444cb57ffeda2aafca4de417076bb8d533943d8  Vistara-AI-NanoBrowser-Chrome.zip
+1688f4ebe1156e4ae82626e93cfdec16110dadc4eb73dd4a1254c08fe733d364  Vistara-AI-NanoBrowser-Source.zip
