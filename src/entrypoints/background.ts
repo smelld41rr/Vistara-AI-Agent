@@ -5,6 +5,7 @@ import { Controller } from '../core/controller';
 import { isTrustedUI } from '../core/messaging';
 export default defineBackground(()=>{
  const controller=new Controller();
+ chrome.runtime.onConnect.addListener(port=>{if(port.name==='vistara-agent'&&isTrustedUI(port.sender??{},chrome.runtime.id,chrome.runtime.getURL('')))port.onDisconnect.addListener(()=>controller.agentPanelClosed());});
  chrome.runtime.onMessage.addListener((raw,sender,respond)=>{
   // Only packaged extension UIs may call privileged RPC, never web content scripts.
   if(!isTrustedUI(sender,chrome.runtime.id,chrome.runtime.getURL(''))) return;

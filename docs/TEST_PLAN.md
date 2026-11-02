@@ -6,3 +6,5 @@ Fixture-browser: article/form/table/injection pages; compiled page reader on rea
 Native-extension: launch production build in persistent Chromium, inspect worker and open sidepanel. Record native loading failure and administrator policy if observed; do not bypass it.
 Live Gemini/Groq: NOT RUN unless user key is supplied via env; never print it.
 Packaging: ZIP root manifest, assets present, no .env/node_modules/secrets, hash both archives.
+
+M2: tests/unit/automation.test.ts; tests/integration/agent.test.ts; npm run test:m2 (actual DOM/navigation fixture plus actual manager/REST scripted Gemini integration and UI controls). Retain npm run test:e2e baseline. Native nine-command matrix is separate and UNVERIFIED if blocked. Scan source, all available Git history diffs, pending changes, reports and ZIPs before public upload. No force push or unrelated deletion.

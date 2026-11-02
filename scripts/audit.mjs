@@ -7,7 +7,7 @@ assert.equal(manifest.manifest_version,3);
 assert.deepEqual([...manifest.permissions].sort(),['activeTab','scripting','sidePanel','storage'].sort());
 assert.equal(manifest.host_permissions,undefined,'No default all-site grants');
 assert.equal(manifest.content_scripts,undefined,'No automatic content injection');
-assert.deepEqual([...manifest.optional_host_permissions].sort(),['https://generativelanguage.googleapis.com/*','https://api.groq.com/*'].sort());
+assert.deepEqual([...manifest.optional_host_permissions].sort(),['https://generativelanguage.googleapis.com/*','https://api.groq.com/*','http://*/*','https://*/*'].sort());
 assert.ok(manifest.content_security_policy.extension_pages.includes("script-src 'self'"));
 for(const path of [manifest.background.service_worker,manifest.side_panel.default_path,manifest.action.default_popup,...Object.values(manifest.icons)])await stat(join(dist,path));
 const findings=[];let files=0;let bytes=0;
@@ -20,4 +20,4 @@ async function walk(dir){for(const entry of await readdir(dir,{withFileTypes:tru
 }}}}
 await walk(dist);
 assert.deepEqual(findings,[]);
-console.log(JSON.stringify({status:'PASS',category:'static-build-audit',files,bytes,checks:['exact permission baseline','no static hosts or content scripts','provider-only optional hosts','asset existence','CSP','credential-pattern and synthetic-canary scan','no eval/Function or remote HTML scripts'],limitations:'Heuristic static scan, not a proof of absence of all secrets or a dynamic network audit.'},null,2));
+console.log(JSON.stringify({status:'PASS',category:'static-build-audit',files,bytes,checks:['exact permission baseline','no static hosts or content scripts','optional-only HTTP/HTTPS site grants; no default access','asset existence','CSP','credential-pattern and synthetic-canary scan','no eval/Function or remote HTML scripts'],limitations:'Heuristic static scan, not a proof of absence of all secrets or a dynamic network audit.'},null,2));

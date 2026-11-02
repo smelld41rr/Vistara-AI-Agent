@@ -16,6 +16,7 @@ export function installMockChrome({ snapshot, seededConversation }) {
   const dataFor = async (type, payload = {}) => {
     requests.push({ type, payload: type === 'KEY_SET' ? { ...payload, key: '[REDACTED]' } : payload });
     switch (type) {
+      case 'AGENT_GET': return null;
       case 'BOOT': return globalThis.structuredClone({ settings: state.settings, conversations: state.conversations, keys: state.keys });
       case 'SETTINGS_SAVE': state.settings = globalThis.structuredClone(payload.settings); return state.settings;
       case 'KEY_SET': state.keys[payload.provider] = true; return null;

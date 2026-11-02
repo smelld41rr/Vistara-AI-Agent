@@ -74,4 +74,6 @@ No remote code, no eval in extension contexts, a strict content security policy,
 
 
 ## Current execution scope
-The PDF provides staged sessions: complete M0 and M1 first. Do not start M2 until M1 is verified. The requested initial stack and M0 permissions are part of the user-authorized build; the STOP-AND-ASK rule applies to additions or changes beyond this baseline. No remote publication. Existing /workspace/Vistara is unrelated and must remain untouched.
+The user has now explicitly reported manual M0/M1 Chrome/Gemini/selection verification and authorized M2 only. Preserve M0/M1; do not begin M3. M2 includes the requested bounded function-calling tool feedback cycle, not a generalized M3 planner. The requested initial stack and M0 permissions are part of the user-authorized build; the STOP-AND-ASK rule applies to additions or changes beyond this baseline. No remote publication. Existing /workspace/Vistara is unrelated and must remain untouched.
+
+Latest explicit user authorization: keep smelld41rr/Vistara-AI-Agent PUBLIC; sanitized M2 source, tests, reports and release ZIP upload authorized after checks. This supersedes the earlier private-only request. No force push or unrelated-file deletion. No deployment or store publication.

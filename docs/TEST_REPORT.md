@@ -1,3 +1,7 @@
+# Historical M0/M1 report
+
+For current M2 results see M2-TEST-REPORT.md (95 unit/integration + 18 baseline + 15 M2 fixture checks; native M2 unverified).
+
 # Test report — Vistara AI 0.1.0
 
 Date: 2 November 2026. Scope: staged M0/M1 read-only build. No live API key supplied. No third-party live-site checks, publication or remote push.

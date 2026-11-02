@@ -1,5 +1,8 @@
 # Delivery and retrieval
 
+## Current M2 delivery
+The latest explicit user instruction keeps the repository PUBLIC and authorizes sanitized M2 upload. New artifacts are Vistara-AI-M2-Chrome.zip, Vistara-AI-M2-Source.zip, M2-TEST-REPORT.md, M2-NATIVE-VERIFICATION.md and SHA256SUMS-M2.txt. Earlier packages remain for rollback. No M3, deployment or store publication. Workspace attachment export is unavailable, so authorized GitHub delivery is used.
+
 ## GitHub delivery authorization
 
 The user explicitly requested uploading all project files to https://github.com/smelld41rr/Vistara-AI-Agent so they can download them. This authorizes the requested repository upload and supersedes the earlier no-push condition for this delivery. Source, docs, tests, original assets and verified archives are included; secrets, node_modules, caches and work logs are excluded. Download links are in the repository README. The workspace-only retrieval limitation below records the earlier environment constraint.

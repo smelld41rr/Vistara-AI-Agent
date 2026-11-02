@@ -1,19 +1,15 @@
-# Known limitations
+# Known limitations — M2
 
-This is a staged M0/M1 read-only build, not the completed M0–M8 browser agent.
-- Native extension loading is subject to the managed Chromium policy; see the attempt and manual Windows checklist in [NATIVE_VERIFICATION.md](NATIVE_VERIFICATION.md). Windows not tested here.
-- Live Gemini/Groq generation not run: no user key supplied. REST adapters are tested with scripted responses only.
-- Model metadata does not reliably expose tools/images/structured output/free eligibility; the provider contract records unsupported metadata as unknown. The model picker does not certify those capabilities or free-tier eligibility. Models are user-selected; no hardcoded default.
-- No action engine/autonomous browser mutation, multi-tab comparison, extraction studio, graph workflows, recorder, alarms, vision or voice.
-- Reader does not support protected Chrome/Web Store/PDF viewer pages, any iframe content (including same-origin frames), closed shadow DOM or canvas data. Dynamic-page snapshots may become stale; read again.
-- No input values are read. Recognizable secrets are redacted but sensitive prose cannot be detected reliably.
-- Context budget is in characters, not a measured token count. History and page serialization are bounded separately; the current user prompt and system instruction add to the total. Truncated snapshot serialization is source data, not guaranteed to remain a complete JSON document. Provider token metadata shown only when reported; remaining quota unknown.
-- Background worker can suspend; drafts checkpoint and recover as interrupted, never replay automatically. A live worker suspension test is blocked if native extension installation is blocked.
-- Basic safe Markdown formatting; complex GFM tables/math not implemented.
-- No paid backend or secret vault. Local-persisted keys carry client-side risks; session-only recommended.
-
-- Native activeTab, side-panel user gestures, trusted-context Chrome storage access and a live worker restart remain unverified here. Mocked Chrome APIs and real IndexedDB/browser fixtures do not establish those privileged behaviors.
-- Provider permission revocation is checked before new requests. This build does not monitor a mid-request permission removal to guarantee immediate abort; use Stop before revoking provider access.
-- Prompt-injection delimiters and escaped rendering do not guarantee model factual accuracy or instruction-following. The deterministic M1 boundary is the absence of executable browser/action/export tools.
-- The entire page read is not cancellable. The background applies a 10-second reply timeout after injection; the reader performs a bounded synchronous DOM traversal.
-- History is retained locally until deleted; configurable retention and automatic expiry are not implemented. Basic conversation JSON export exists, but structured page-data CSV/JSON exports and task/workflow logs are pending.
+- Native M2 Chrome extension/API acceptance is UNVERIFIED: managed policy blocks unpacked loading. User-reported manual M1 verification is recorded separately; do not infer M2 passes. M2 native checklist includes all nine requested GitHub/WayHome commands.
+- Live Gemini function calling from installed M2 was not executed here (no user key). Automated combined fixture test uses real TaskManager, REST adapter, browser coordinator/content bundle and actual DOM, but scripted Gemini HTTP and Chrome transport.
+- Model tool support/free eligibility may be unknown; choose a compatible Gemini model. Groq remains available for read-only Chat; Tasks require Gemini and never silently switch providers/billing.
+- No generalized M3 planning, saved workflows, recorder, scheduling, extraction studio or voice/vision. Latest task trace/checkpoint only; no M6 task-history library.
+- Only standard visible DOM/open shadow controls; no closed shadow roots, iframe content, canvas, browser/Web Store/PDF protected pages. Custom dropdowns/contenteditable entry/Enter/file upload/credential tools not supported.
+- Inputs with credential/payment/OTP/username semantics and sensitive-looking text refused; heuristics may conservatively refuse benign fields. Do not share confidential prose: no automatic DLP guarantee.
+- Field edits may trigger site handlers, so all edits require preview/approval. Sensitive/ambiguous clicks and exact destinations also ask. Visible form preview cannot expose hidden/page-managed payload; no server-side success claimed.
+- Verification checks actual DOM/URL/value/scroll evidence. A mutation is not proof of semantic/server success; verify_action exposes current observation plus historical evidence and does not assert final-goal completion. Unknown mutation outcome stops for manual inspection.
+- Stop prevents further dispatch and aborts waits/model requests but cannot undo an already-dispatched site operation. Pause/closing Tasks gates the next action; an in-flight action may finish. Worker suspension marks interrupted, never replays. Native port/lifecycle behavior still requires manual acceptance.
+- Back only through task-recorded navigation, including prior task history for same tab when current URL matches; manual/unrelated navigation resets it. Task switching is limited to initial/task-owned tabs, max eight; unrelated existing tabs cannot be enrolled through the model.
+- Snapshot traversal/content, 10-second navigation/wait limits, 12-second content reply, model request timeout, step/request limits and repeated-failure stop may interrupt slow sites. Token usage/free quota not invented; context budget is characters.
+- Chrome host grants can persist until revoked in extension Site access; task-local approval is separate. Optional HTTP/HTTPS declarations grant no access by default.
+- Session-default keys/local opt-in; local storage is not a vault. No production API keys, browser profiles or local caches are shipped. Static secret scans are heuristic, not proof of all sensitive-data absence.

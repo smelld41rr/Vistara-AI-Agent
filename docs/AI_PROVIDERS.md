@@ -31,3 +31,6 @@ The user explicitly chooses the provider and model and separately consents to ea
 ## Known limits
 
 Real provider responses, free-tier account eligibility and per-model advanced features are unverified without the user's key. A successful model-list connection test establishes credentials/network access to listing, not successful generation. Endpoint model metadata cannot universally prove tool/image/structured support. Native Chrome/Windows provider integration is a separate acceptance check. Client-side keys cannot offer a server-side vault's protection; session-only storage is default and persistent storage requires disclosure.
+
+## M2 Tasks
+Tasks currently require the explicitly selected Gemini model; Groq read-only Chat/settings remain preserved. Tools use the existing Provider.generate contract, schema-derived functionDeclarations, functionCall IDs/thought signatures and functionResponse/tool feedback. No provider interface or hardcoded model change. User chooses a model supporting function calling; metadata may leave that capability unknown, so live generation failures remain possible. No automatic billing/provider switch, no 429 retries. Combined fixture test uses real Gemini REST wire parsing with scripted HTTP responses, not a live model. Provider keys never enter content scripts/tool arguments/observations/traces.

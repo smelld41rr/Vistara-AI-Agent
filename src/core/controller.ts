@@ -1,3 +1,4 @@
+import { TaskManager } from '../features/automation/manager';
 import { PayloadSchemas, type Request,type Conversation } from './schemas';
 import { clearData,clearHistory,deleteConversation,getConversation,getKey,getSettings,listConversations,recoverInterrupted,removeKey,saveConversation,saveSettings,secureStorage,setKey } from './storage';
 import { pageContext,permittedPage,publicError,redact,redactStream,safeUrl,SYSTEM_PROMPT } from './security';
@@ -5,6 +6,9 @@ import { createProvider,type GenerateRequest,type ProviderId } from '../features
 import { PageSnapshotSchema,type PageSnapshot } from '../features/browser/types';
 export const PROVIDER_ORIGINS={gemini:'https://generativelanguage.googleapis.com/*',groq:'https://api.groq.com/*'};
 export class Controller {
+ private agent:TaskManager|undefined;
+ agentPanelClosed(){this.agent?.panelClosed();}
+ private tasks(){return this.agent??=new TaskManager();}
  private active=new Map<string,{abort:AbortController;conversationId:string}>();
  private ready:Promise<void>;
  private starting=false;
@@ -31,7 +35,11 @@ export class Controller {
  }
  async handle(request:Request):Promise<unknown>{
   await this.ready;
+  if(!request.type.startsWith('AGENT_')&&['CHAT_START','SETTINGS_SAVE','KEY_SET','KEY_REMOVE','HISTORY_CLEAR','CONVERSATION_DELETE','DATA_CLEAR'].includes(request.type)&&this.agent?.isBusy())throw new Error('Stop the active browser task before changing chat/settings/history.');
   switch(request.type){
+   case 'AGENT_GET':return this.tasks().get();
+   case 'AGENT_START':if(this.active.size||this.starting)throw new Error('Stop the chat response before starting a browser task.');return this.tasks().start(request.payload);
+   case 'AGENT_CONTROL':return this.tasks().control(request.payload);
    case 'PING':return {message:'Vistara is ready'};
    case 'BOOT':return {settings:await getSettings(),conversations:await listConversations(),keys:{gemini:Boolean(await getKey('gemini')),groq:Boolean(await getKey('groq'))}};
    case 'SETTINGS_SAVE':{const {settings}=PayloadSchemas.SETTINGS_SAVE.parse(request.payload);if(this.active.size||this.starting)throw new Error('Stop the active response before changing settings.');return saveSettings(settings);}

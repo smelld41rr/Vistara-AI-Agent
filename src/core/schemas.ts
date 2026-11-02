@@ -15,7 +15,7 @@ export const MessageSchema=z.object({id:z.string(),role:z.enum(['user','assistan
 export type Message=z.infer<typeof MessageSchema>;
 export const ConversationSchema=z.object({id:z.string(),title:z.string(),updatedAt:z.number(),messages:z.array(MessageSchema),usage:z.object({requests:z.number(),inputTokens:z.number().nullable(),outputTokens:z.number().nullable()}),provider:ProviderIdSchema,model:z.string()});
 export type Conversation=z.infer<typeof ConversationSchema>;
-export const RequestSchema=z.object({id:z.string().min(1).max(100),type:z.enum(['PING','BOOT','SETTINGS_SAVE','KEY_SET','KEY_REMOVE','MODELS_LIST','CONNECTION_TEST','PAGE_READ','CHAT_START','CHAT_STOP','CONVERSATION_DELETE','HISTORY_CLEAR','DATA_CLEAR']),payload:z.unknown().optional()}).strict();
+export const RequestSchema=z.object({id:z.string().min(1).max(100),type:z.enum(['PING','BOOT','SETTINGS_SAVE','KEY_SET','KEY_REMOVE','MODELS_LIST','CONNECTION_TEST','PAGE_READ','CHAT_START','CHAT_STOP','CONVERSATION_DELETE','HISTORY_CLEAR','DATA_CLEAR','AGENT_GET','AGENT_START','AGENT_CONTROL']),payload:z.unknown().optional()}).strict();
 export type Request=z.infer<typeof RequestSchema>;
 export const PayloadSchemas={
  SETTINGS_SAVE:z.object({settings:SettingsSchema}).strict(),

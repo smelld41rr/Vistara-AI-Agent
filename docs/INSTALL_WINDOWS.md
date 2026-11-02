@@ -12,3 +12,6 @@ Native extension installation was not verified on Windows in this Linux environm
 
 ## Build from source
 Install Node >=24.15 and npm. Run npm ci, npm run build. Load .output/chrome-mv3. Run npm run typecheck, npm run lint, npm test, npm run test:e2e. npm run zip creates extension and source ZIPs in release/.
+
+## M2 (0.2.0)
+Use Vistara-AI-M2-Chrome.zip; keep the old M0/M1 ZIP as rollback. Extract to a stable folder, reload at chrome://extensions and reload website tabs. Chat stays read-only. Tasks requires a configured Gemini model, per-provider cloud consent, explicit per-task observation-sharing checkbox and an exact-site grant. Enter exact text to type in the goal; inspect every edit/click/destination approval. Use Pause/Resume/Stop and review actual trace statuses. Host grants may persist in Chrome; revoke in extension Details → Site access. See docs/M2-NATIVE-VERIFICATION.md for the nine-command acceptance checklist; native M2 has not been verified in this managed environment. Do not enable organization-policy bypasses.

@@ -105,7 +105,7 @@ try {
     await page.getByRole('button', { name: 'Close page preview' }).click();
   });
   await check('future milestone screens show honest Not built yet state', async () => {
-    for (const name of ['Tasks', 'Workflows', 'Extract']) {
+    for (const name of ['Workflows', 'Extract']) {
       await page.getByRole('navigation').getByRole('button', { name, exact: true }).click();
       await page.getByText('Not built yet', { exact: true }).waitFor();
       await page.getByRole('button', { name: 'Back to Chat' }).click();

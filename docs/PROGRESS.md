@@ -1,3 +1,24 @@
+# Current update — M2, 2 November 2026
+
+User reports real-Chrome M1 sidebar, live Gemini, page/repository summary and exact selection verified. This is USER_REPORTED, separate from environment runs. M2 implemented; fixture/unit/integration verification is recorded in M2-TEST-REPORT.md. Native M2 remains UNVERIFIED/BLOCKED by managed install policy. M3 explicitly NOT STARTED. Public GitHub sanitized M2 upload explicitly authorized (latest user instruction supersedes private request).
+
+## M2 capability status
+
+| Capability | Status | Evidence |
+|---|---|---|
+| Eleven tool schemas/registry and Gemini definitions | DONE_VERIFIED | Unit plus provider/manager integrations |
+| Actual DOM find/click/type/select/scroll/wait/verification | DONE_VERIFIED | Real Chromium local fixtures, privilege transport simulated |
+| URL/tab/back scope and observable checks | DONE_VERIFIED | Chrome mocks + actual fixture tabs/navigation; no native claim |
+| Task consent, exact origins/tabs, fresh approvals, credential refusal | DONE_VERIFIED | Unit/integration/security/fixture tests |
+| Gemini functionCall/functionResponse feedback | DONE_VERIFIED | Scripted HTTP through actual REST adapter/manager/DOM; live M2 unverified |
+| Goal/site/tab/action/trace/results and grant/approve/pause/resume/stop UI | DONE_VERIFIED | Compiled production UI fixture tests |
+| Native Chrome M2 and live function calling | BLOCKED | Managed policy; all nine manual checks UNVERIFIED |
+| M3 general planner, M4+ studio/workflows/schedules | PENDING | Not started |
+
+Next native acceptance: docs/M2-NATIVE-VERIFICATION.md. No administrator-policy workaround. Earlier M0/M1 report below is historical and superseded for current capability inventory; its 66 baseline tests remain regressions.
+
+---
+
 # Progress — 2026-11-02
 
 Documents read in full: 11-page PDF and 280-line master specification; trace in SPEC_REVIEW.md. Existing /workspace/Vistara Theme World preserved; no push, publish or deployment.

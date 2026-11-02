@@ -2,10 +2,11 @@ import { spawnSync } from 'node:child_process';
 const audit=spawnSync(process.execPath,['scripts/audit.mjs'],{stdio:'inherit'});if(audit.status!==0)process.exit(audit.status??1);
 const script=String.raw`
 from pathlib import Path
-import zipfile,hashlib,json,re
+import zipfile,hashlib,json,re,os
 root=Path.cwd(); release=root/'release';release.mkdir(exist_ok=True)
 built=root/'.output/chrome-mv3'
-chrome=release/'Vistara-AI-Chrome.zip';source=release/'Vistara-AI-Source.zip'
+m2=os.environ.get('VISTARA_PACKAGE_M2')=='1'
+chrome=release/('Vistara-AI-M2-Chrome.zip' if m2 else 'Vistara-AI-Chrome.zip');source=release/('Vistara-AI-M2-Source.zip' if m2 else 'Vistara-AI-Source.zip')
 def write_zip(target,entries):
  with zipfile.ZipFile(target,'w',zipfile.ZIP_DEFLATED) as z:
   for file,name in sorted(entries,key=lambda x:str(x[1])):
@@ -31,8 +32,11 @@ for file in [chrome,source]:
    assert 'manifest.json' in names
    m=json.loads(z.read('manifest.json'))
    assert m['manifest_version']==3 and 'host_permissions' not in m
+   if m2:assert m['version']=='0.2.0' and 'actions.js' in names
    assert all(v.lstrip('/') in names for v in m['icons'].values())
-  else:assert 'src/core/controller.ts' in names and 'package-lock.json' in names and 'docs/TEST_REPORT.md' in names
+  else:
+   assert 'src/core/controller.ts' in names and 'package-lock.json' in names and 'docs/TEST_REPORT.md' in names
+   if m2:assert 'docs/M2-TEST-REPORT.md' in names and 'docs/M2-NATIVE-VERIFICATION.md' in names and 'src/features/automation/contracts.ts' in names
   hits=[]
   for n in names:
    if Path(n).suffix not in {'.ts','.tsx','.js','.json','.md','.html','.css','.mjs'}:continue
@@ -40,8 +44,8 @@ for file in [chrome,source]:
    if re.search(r'\b(?:AIza[\w-]{28,}|gsk_[\w-]{28,}|sk-[\w-]{28,})\b',s):hits.append(n)
   assert not hits, 'Credential-shaped literals: '+str(hits)
  report.append({'file':file.name,'bytes':file.stat().st_size,'entries':len(names),'sha256':hashlib.sha256(file.read_bytes()).hexdigest(),'archiveIntegrity':'PASS','secretPatternScan':'PASS'})
-(release/'SHA256SUMS.txt').write_text('\n'.join(r['sha256']+'  '+r['file'] for r in report)+'\n')
-(release/'archive-verification.json').write_text(json.dumps(report,indent=2)+'\n')
+(release/('SHA256SUMS-M2.txt' if m2 else 'SHA256SUMS.txt')).write_text('\n'.join(r['sha256']+'  '+r['file'] for r in report)+'\n')
+(release/('archive-verification-M2.json' if m2 else 'archive-verification.json')).write_text(json.dumps(report,indent=2)+'\n')
 print(json.dumps(report,indent=2))
 `;
-const result=spawnSync('python',['-c',script],{stdio:'inherit'});process.exit(result.status??1);
+const result=spawnSync('python',['-c',script],{stdio:'inherit',env:{...process.env,VISTARA_PACKAGE_M2:process.argv.includes('--m2')?'1':'0'}});process.exit(result.status??1);

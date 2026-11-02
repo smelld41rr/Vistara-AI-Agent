@@ -1,5 +1,5 @@
 {
-  "startedAt": "2026-11-02T05:14:21.844Z",
+  "startedAt": "2026-11-02T12:07:19.999Z",
   "native": {
     "category": "real-extension",
     "status": "BLOCKED",
@@ -42,5 +42,5 @@
     "errors": [],
     "browserVersion": "154.0.8037.57"
   },
-  "finishedAt": "2026-11-02T05:14:35.482Z"
+  "finishedAt": "2026-11-02T12:07:33.713Z"
 }

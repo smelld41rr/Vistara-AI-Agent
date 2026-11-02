@@ -1,6 +1,6 @@
 {
   "name": "vistara-ai",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "engines": {
@@ -13,7 +13,9 @@
     "typecheck": "wxt prepare && tsc --noEmit",
     "lint": "eslint .",
     "test": "vitest run",
-    "test:e2e": "node scripts/browser-test.mjs"
+    "test:e2e": "node scripts/browser-test.mjs",
+    "test:m2": "node scripts/m2-browser-test.mjs",
+    "zip:m2": "npm run build && node scripts/package.mjs --m2"
   },
   "dependencies": {
     "react": "19.3.1",

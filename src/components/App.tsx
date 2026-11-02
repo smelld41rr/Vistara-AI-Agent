@@ -4,6 +4,7 @@ import { rpc } from '../core/client';
 import type { Conversation, Settings } from '../core/schemas';
 import { useAppStore } from '../hooks/useAppStore';
 import { Brand } from './ui/Brand';
+import { AgentView } from './AgentView';
 import { ChatView } from './ChatView';
 import { SettingsView } from './SettingsView';
 import { HistoryView } from './HistoryView';
@@ -14,7 +15,6 @@ const nav = [
   { name: 'Extract Data', icon: Database }, { name: 'History', icon: History }, { name: 'Settings', icon: Settings2 },
 ] as const;
 const pending: Partial<Record<View, { description: string; milestone: string }>> = {
-  'Agent Tasks': { description: 'Plans, browser actions, and approval controls will live here after the page-reader milestone is verified.', milestone: 'Milestones 2–3' },
   Workflows: { description: 'Reusable workflows and their visual editor are planned after the browser action engine is verified.', milestone: 'Milestone 5' },
   'Extract Data': { description: 'Structured extraction, comparisons, and CSV exports are planned. You can already ask about headings or links in Chat.', milestone: 'Milestone 4' },
 };
@@ -56,10 +56,11 @@ export function App() {
     {notice && <div role={notice.kind === 'error' ? 'alert' : 'status'} className={`toast ${notice.kind}`}><span>{notice.message}</span><button aria-label="Dismiss notification" className="icon-button" onClick={() => setNotice(undefined)}><X size={15}/></button></div>}
     <main className={`main-content ${view === 'Chat' ? 'chat-main' : ''}`}>
       {view === 'Chat' && <ChatView onDeleted={reload} onBusyChange={setChatBusy} resetKey={resetKey} settings={boot.settings} hasKey={boot.keys[boot.settings.provider]} conversation={conversation} onConversation={updateConversation} onSelectConversation={setCurrentId} onSettings={() => setView('Settings')} notify={notify}/>}
+      {view === 'Agent Tasks' && <AgentView/>}
       {view === 'Settings' && <SettingsView boot={boot} saveSettings={saveSettings} reload={reload} notify={notify}/>}
       {view === 'History' && <HistoryView conversations={boot.conversations} onOpen={(id) => { setCurrentId(id); setView('Chat'); }} reload={reload} notify={notify}/>}
-      {pending[view] && <section className="pending-state"><div className="pending-symbol"><Workflow size={28}/></div><div className="eyebrow">{pending[view]?.milestone}</div><h1>{view}</h1><span className="status-pill">Not built yet</span><p>{pending[view]?.description}</p><p className="muted">This build supports read-only AI chat and page understanding. It does not click, type, submit forms, or run scheduled tasks.</p><button className="secondary" onClick={() => setView('Chat')}><ArrowLeft size={15}/> Back to Chat</button></section>}
+      {pending[view] && <section className="pending-state"><div className="pending-symbol"><Workflow size={28}/></div><div className="eyebrow">{pending[view]?.milestone}</div><h1>{view}</h1><span className="status-pill">Not built yet</span><p>{pending[view]?.description}</p><p className="muted">This screen is not built yet. Chat remains read-only; browser actions run from Tasks with explicit consent and approvals. Workflows and schedules remain pending.</p><button className="secondary" onClick={() => setView('Chat')}><ArrowLeft size={15}/> Back to Chat</button></section>}
     </main>
-    <footer className="app-footer"><span className="local-dot"/> Stored on this device<span>v0.1.0 · M0/M1</span></footer>
+    <footer className="app-footer"><span className="local-dot"/> Stored on this device<span>v0.2.0 · M2</span></footer>
   </div>;
 }

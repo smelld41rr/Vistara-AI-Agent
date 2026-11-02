@@ -45,3 +45,6 @@ PDF Session 2, page 6, says: “Milestone 1 must be verified first; if it is not
 - “Ask again” resends the previous prompt as another message. It is not replacement-answer regeneration. Basic safe Markdown is implemented; full GFM/math is not.
 - Settings provide current M1 provider/response/appearance controls, not the later action-policy/site-grant/retention/scheduling controls. History is conversation history and JSON export, not task/workflow traces.
 - Native popup/side-panel activation, activeTab behavior, trusted Chrome storage access and live service-worker interruption remain BLOCKED or unverified, as detailed in the current test report. No M0/M1 end-to-end native gate is represented as passed.
+
+## Current M2 continuation
+The user has now manually verified M1 in Chrome and explicitly authorized M2, including a bounded Gemini tool-feedback cycle and Task UI. The earlier gate explanation describes the M0/M1 delivery, not a current refusal to implement M2. Current implemented/status limits are in M2-TEST-REPORT, BROWSER_TOOLS and KNOWN_LIMITATIONS. M3 is explicitly not started. Latest GitHub authorization keeps the repository PUBLIC and allows sanitized M2 source/artifact upload.

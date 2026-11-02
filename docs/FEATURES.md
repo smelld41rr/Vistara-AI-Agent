@@ -1,7 +1,9 @@
-# Feature inventory — milestone 0/1 build
+# Current features — M2 (0.2.0)
 
-Foundation: WXT MV3, React, TypeScript strict, Tailwind tokens, original local icons, typed RPC, Chrome storage plus IndexedDB.
-Read-only assistant: Gemini/Groq BYOK adapters, runtime model lists, explicit provider/model, cloud consent, streamed conversation, stop, regenerate by resending, safe rendering, copy, searchable local conversation history, redacted JSON history export and deletion, provider usage metadata where present. “Ask again” appends a new request; it does not replace the earlier answer.
-Page reader: actual visible text, headings, links, form structure without values, selection, restricted-page handling, bounded traversal. Current-page context defaults OFF.
-Appearance: light/dark/system, compact density, font-size control, reduced motion. Preferences apply after Save preferences. Page preview is local; sending with context enabled takes a fresh snapshot rather than reusing the preview.
-Pending: browser mutation/action tools, autonomous agent, multi-tab research, structured extraction studio/exports, workflow graph/recorder, scheduling. Screens say Not built yet. Native Chrome and live-provider verification statuses are in TEST_REPORT.md.
+M0/M1 preserved: read-only Chat, Gemini/Groq BYOK, runtime model discovery, per-provider consent, page context OFF, separate M1 page reader, selection, streams/cancel, IndexedDB conversations, local deletion/export, themes/font/density.
+
+M2: eleven schema-validated browser tools, packaged actions.js, task-scoped sites/tabs, exact-origin optional grants, semantic controls and stale revalidation, actual DOM edits/clicks/native dropdowns/scroll, URL/new-tab/switch/back operations, dynamic waits, observable evidence, Gemini supported function-call/functionResponse feedback.
+
+Tasks: separate explicit authorization to share relevant observations; current goal/site/tab/action, actual trace/results, permission and sensitive-action cards, 30-second one-use approvals, pause/resume/stop, uncertain-outcome interruption and no automatic replay, latest-task local checkpoint and per-task execution history. Panel close pauses before next action. Cross-task Back uses only task-recorded history for the same tab if its current URL still matches.
+
+Not M3: no generalized planner/workflow system, saved workflows/recorder, schedule service, extraction/comparison studio or vision/voice. Only current/latest task trace, not multi-task history UI. Native M2/live Gemini tool calling remain unverified; tests distinguish real DOM fixture evidence from native Chrome.
