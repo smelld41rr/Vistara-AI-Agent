@@ -1,0 +1,7 @@
+node_modules/
+.wxt/
+.output/
+release/
+work/
+.env*
+*.log

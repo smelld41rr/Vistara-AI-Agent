@@ -1,0 +1,46 @@
+{
+  "startedAt": "2026-11-02T05:14:21.844Z",
+  "native": {
+    "category": "real-extension",
+    "status": "BLOCKED",
+    "checks": [],
+    "errors": [],
+    "policy": {
+      "ExtensionInstallBlocklist": [
+        "*"
+      ],
+      "ExtensionInstallSources": []
+    },
+    "browser": "154.0.8037.57",
+    "policyPageOpened": true,
+    "policyText": "",
+    "reason": "Managed Chromium sets ExtensionInstallBlocklist=[\"*\"]. The production extension worker did not load with standard unpacked-extension flags. Policy was not changed or bypassed."
+  },
+  "mockBrowser": {
+    "category": "mocked-browser",
+    "status": "PASSED",
+    "checks": [
+      "compiled reader returns actual fixture text, title and URL",
+      "reader reinjection remains singleton and read-only",
+      "reader excludes hidden instructions and sensitive field values",
+      "real IndexedDB commits, redaction, interruption recovery and deletion",
+      "production React sidebar renders and page context defaults OFF",
+      "compiled UI fits 320, 400 and 480 pixel panels",
+      "page preview is a local read and does not start a provider request",
+      "future milestone screens show honest Not built yet state",
+      "Settings renders provider cloud disclosure and terms",
+      "BYOK controls save a session key and discover models only on a user gesture",
+      "model selection and per-provider consent save without selecting a model automatically",
+      "theme, compact spacing and font settings apply after saving",
+      "streamed mock response renders as escaped text with no HTML execution",
+      "context-enabled prompt uses the actual fixture snapshot through the scripted provider",
+      "Stop cancels an in-progress mock request without reporting completion",
+      "401, 403 and 429 normalized errors render with recovery guidance",
+      "history search, restore, export and delete controls work against the scripted store",
+      "keyboard focus is visible and settings have no horizontal overflow at 320px"
+    ],
+    "errors": [],
+    "browserVersion": "154.0.8037.57"
+  },
+  "finishedAt": "2026-11-02T05:14:35.482Z"
+}
