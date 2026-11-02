@@ -111,11 +111,11 @@ describe('provider contract — mocked HTTP, not live provider verification', ()
   });
   it('rejects a truncated stream rather than claiming completion', async () => {
     const fetcher = vi.fn<typeof fetch>().mockResolvedValue(sse({ candidates: [{ content: { parts: [{ text: 'Partial' }] } }] }));
-    await expect(events(createProvider('gemini', key, { fetch: fetcher }).stream(input))).rejects.toMatchObject({ code: 'invalid_request' });
+    await expect(events(createProvider('gemini', key, { fetch: fetcher }).stream(input))).rejects.toMatchObject({ code: 'stream_parser' });
   });
   it('enforces SSE buffer budget and reports stream timeout as timeout', async () => {
     const fetcher = vi.fn<typeof fetch>().mockResolvedValue(new Response('data: ' + 'x'.repeat(1_000_001)));
-    await expect(events(createProvider('gemini', key, { fetch: fetcher }).stream(input))).rejects.toMatchObject({ code: 'invalid_request' });
+    await expect(events(createProvider('gemini', key, { fetch: fetcher }).stream(input))).rejects.toMatchObject({ code: 'stream_parser' });
     const hanging = vi.fn<typeof fetch>().mockResolvedValue(new Response(new ReadableStream<Uint8Array>({ start() {} })));
     await expect(events(createProvider('gemini', key, { fetch: hanging }).stream({ ...input, timeoutMs: 100 }))).rejects.toMatchObject({ code: 'timeout' });
   });

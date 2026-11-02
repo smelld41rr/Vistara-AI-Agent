@@ -1,3 +1,7 @@
+# Current M2.1 report
+
+See [M2.1-TEST-REPORT.md](M2.1-TEST-REPORT.md) for version 0.2.1 final executed results and current verification boundaries. Earlier M0/M1 report below is historical.
+
 # Historical M0/M1 report
 
 For current M2 results see M2-TEST-REPORT.md (95 unit/integration + 18 baseline + 15 M2 fixture checks; native M2 unverified).

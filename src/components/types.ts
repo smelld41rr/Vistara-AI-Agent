@@ -1,10 +1,10 @@
 import type { Conversation, Settings } from '../core/schemas';
-export interface BootData { settings: Settings; conversations: Conversation[]; keys: { gemini: boolean; groq: boolean } }
+export interface BootData { settings: Settings; conversations: Conversation[]; keys: Record<string,boolean> }
 export type View = 'Chat' | 'Agent Tasks' | 'Workflows' | 'Extract Data' | 'History' | 'Settings';
-export type ProviderId = 'gemini' | 'groq';
+export type ProviderId = string;
 export type Notify = (message: string, kind?: 'success' | 'error') => void;
-export const providerNames: Record<ProviderId, string> = { gemini: 'Google Gemini', groq: 'Groq' };
-export const providerOrigins: Record<ProviderId, string> = { gemini: 'https://generativelanguage.googleapis.com/*', groq: 'https://api.groq.com/*' };
+export const providerNames: Record<string, string> = { gemini: 'Google Gemini', groq: 'Groq' };
+export const providerOrigins: Record<string, string> = { gemini: 'https://generativelanguage.googleapis.com/*', groq: 'https://api.groq.com/*' };
 export function errorMessage(error: unknown) {
   if (!(error instanceof Error)) return 'Something went wrong. Please try again.';
   const hint = 'hint' in error && typeof error.hint === 'string' ? error.hint : '';

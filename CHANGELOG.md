@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.1 — 2026-11-02 (M2.1 Provider Hub)
+
+- Dynamic local profiles and searchable 11-entry catalog/custom editor; native Gemini/Anthropic plus shared OpenAI-compatible Chat Completions.
+- Separate Chat/Tasks defaults, independent real user-click text/stream/no-op tool diagnostics and worker-owned endpoint/model/key/config capability proof.
+- Additive legacy migration, session/local credential isolation, rollback on storage failure, safe configuration export and key removal; clear data wipes draft secrets and task memory.
+- Explicit origin permissions, clean HTTPS/loopback URL validation, redirect rejection, normalized 503/parser/auth/billing/quota errors, bounded eligible retries and opt-in same-profile streaming fallback.
+- Existing reader, history and browser automation safety preserved; cross-profile history forwarding blocked. 166 unit/integration and 43 combined fixture checks passed. Native/live checks remain unverified/blocked.
+- M2.1 Chrome/Source ZIPs and current provider/migration/usage/security/native acceptance documentation. No M3, GitHub push, deployment or store publication.
+
 ## 0.1.0 — 2026-11-02 (staged M0/M1)
 - Created isolated Vistara AI; existing Theme World untouched.
 - WXT/React strict foundation, original icons/design, minimal-permission MV3 shell and packaged-UI-only typed RPC.

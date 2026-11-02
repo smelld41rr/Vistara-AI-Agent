@@ -1,0 +1,18 @@
+{
+  "category": "M2.1 compiled UI + actual controller/adapters/IndexedDB + real DOM; mocked Chrome APIs and provider HTTP. NOT native/live provider verification.",
+  "status": "PASSED",
+  "checks": [
+    "legacy settings/key/history preserved through actual storage migration",
+    "searchable custom profile editor requests exact API origin only on click",
+    "separate real adapter diagnostics use dummy inputs and safe no-op roundtrip",
+    "explicit Save keeps key session-only; independent Chat/Tasks defaults",
+    "actual Controller routes Chat to custom adapter, no legacy history transfer",
+    "custom function-calling provider drives actual M2 field edit after fresh approval",
+    "profile switching never forwards existing conversation to another provider",
+    "503 diagnostic reports provider outage, profile config export contains no credentials",
+    "responsive provider editor 320/400/480px has no horizontal overflow",
+    "remove-key and clear-data controls wipe saved and draft credentials/history"
+  ],
+  "errors": [],
+  "browser": "154.0.8037.57"
+}

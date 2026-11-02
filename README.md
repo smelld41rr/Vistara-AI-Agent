@@ -1,39 +1,19 @@
-# Vistara-AI-Agent
+# Vistara AI — M2.1 Provider Hub (0.2.1)
 
-## Downloads — M2 browser tools (0.2.0)
+Existing Chrome side-panel assistant and scoped browser tools, now with dynamic BYOK provider profiles. Native Gemini and Anthropic; shared OpenAI-compatible Chat Completions for Groq, OpenAI, OpenRouter, DeepSeek, Together, Fireworks, Cerebras, Mistral and custom endpoints. Separate Chat/Tasks defaults, explicit endpoint grants and independent text/stream/tool diagnostics. No provider availability/free-tier guarantee.
 
-- [Chrome extension ZIP — M2](https://github.com/smelld41rr/Vistara-AI-Agent/raw/refs/heads/main/release/Vistara-AI-M2-Chrome.zip)
-- [Editable source ZIP — M2](https://github.com/smelld41rr/Vistara-AI-Agent/raw/refs/heads/main/release/Vistara-AI-M2-Source.zip)
-- [M2 test report](release/M2-TEST-REPORT.md) · [Native Chrome manual checklist](release/M2-NATIVE-VERIFICATION.md) · [M2 SHA256](release/SHA256SUMS-M2.txt)
-- Earlier M0/M1 packages remain in release/ for rollback.
+Release deliverables: `release/Vistara-AI-M2.1-Chrome.zip`, `release/Vistara-AI-M2.1-Source.zip`, `release/M2.1-TEST-REPORT.md` and checksums. The user explicitly authorized M2.1 GitHub delivery to this public repository. Earlier M2 artifacts remain for rollback.
 
-Extract the M2 Chrome ZIP, then Chrome → chrome://extensions → Developer mode → Load unpacked (or reload existing installation). Current Chat remains read-only. **Tasks** supports the eleven scoped browser tools, Gemini function calling, permission requests, exact action approvals, pause/resume/stop and execution trace. Separate task page-sharing consent is required. No arbitrary JS, credentials, hidden cross-site access or automatic paid/provider switch.
+- [Download M2.1 Chrome extension ZIP](https://github.com/smelld41rr/Vistara-AI-Agent/raw/refs/heads/main/release/Vistara-AI-M2.1-Chrome.zip)
+- [Download M2.1 editable Source ZIP](https://github.com/smelld41rr/Vistara-AI-Agent/raw/refs/heads/main/release/Vistara-AI-M2.1-Source.zip)
+- [Test report](release/M2.1-TEST-REPORT.md) · [SHA256 checksums](release/SHA256SUMS-M2.1.txt)
 
-M2 native Chrome acceptance is **UNVERIFIED** here because managed browser policy blocks unpacked extensions. Actual DOM/tabs/navigation are fixture-tested with Chrome transport and Gemini HTTP responses simulated; do not mistake this for native or live-Gemini evidence. User reports M0/M1 manual Chrome verification. M3, workflows, recorder and schedules are not implemented. See docs/M2-TEST-REPORT.md and M2-NATIVE-VERIFICATION.md.
+Extract the Chrome ZIP and load/reload its manifest folder at `chrome://extensions`. See [installation and usage](docs/PROVIDER_HUB_USAGE.md), [compatibility matrix](docs/PROVIDER_COMPATIBILITY.md), [architecture](docs/PROVIDER_ARCHITECTURE.md), [test report](docs/M2.1-TEST-REPORT.md), [native acceptance checklist](docs/M2.1-NATIVE-VERIFICATION.md) and [limitations](docs/KNOWN_LIMITATIONS.md).
 
-## Vistara AI
+Keys remain in trusted extension session storage by default, local persistence only on explicit opt-in. No keys in pages/exports. Existing Gemini/Groq profiles, keys and IndexedDB conversations migrate without deletion. Changing endpoint/model/key invalidates tool proof. Browser tools require passed text AND no-op function-result tests plus existing site consent/fresh action approvals. Credential entry, arbitrary JavaScript, CAPTCHA/security bypass and silent cross-provider history transfer remain blocked. Chat stays read-only, page context OFF by default.
 
-A local-first Chrome side-panel assistant with your own Gemini or Groq key. No Vistara subscription, registration, backend or local model required. AI content is processed by the chosen external provider, subject to that provider's terms, availability and limits.
+**Verification boundary:** unit/integration and actual DOM/compiled UI fixture tests use mocked Chrome privilege APIs and provider HTTP. Live providers are UNVERIFIED; native installed-extension testing is BLOCKED by managed browser policy. No policy bypass. User-reported M1 Chrome checks are separate historical evidence. No M3, workflows/schedules, deployment or store publication.
 
-**Current scope: M2 browser automation tools plus preserved M0/M1 read-only Chat.** Gemini Tasks use bounded tool calls and explicit approvals. Full M3 planning, multi-tab research studio, structured exports, workflows and schedules remain pending.
+Development: Node >=24.15, npm, Python 3 for ZIP packaging, Chromium for fixtures. `npm ci`; `npm run typecheck`; `npm run lint`; `npm test`; `npm run build`; `npm run test:e2e`; `npm run test:m2`; `npm run test:m21`; `node scripts/security-scan.mjs --m21`; `npm run zip:m21`. Load `.output/chrome-mv3`. Browser tests need localhost sockets and Chromium (`CHROMIUM_PATH`, default `/usr/bin/chromium`). No live automated requests without supplied credentials AND explicit approval.
 
-## Install
-Extract Vistara-AI-Chrome.zip to a permanent folder. Open chrome://extensions → Developer mode → Load unpacked → select the folder with manifest.json. Chrome 120+; Windows instructions in docs/INSTALL_WINDOWS.md. Click the toolbar popup → Open assistant. Configure your provider key, test/discover models, choose a model, accept cloud disclosure and save preferences. Page context is OFF until you explicitly enable it.
-
-**Verification boundary:** production builds, unit/integration and compiled-fixture browser tests are reported separately in docs/TEST_REPORT.md. Native unpacked extension loading is BLOCKED by this environment's managed ExtensionInstallBlocklist policy. Windows/native live behavior is not certified. Live Gemini/Groq generation is NOT RUN because no user key was supplied. No policy was bypassed.
-
-## Development
-Node >=24.15 and npm. `npm ci`, `npm run build`, `npm run typecheck`, `npm run lint`, `npm test`, `npm run test:e2e`. Load `.output/chrome-mv3`. `npm run test:m2` checks actual DOM fixtures with mocked Chrome transport. `npm run zip:m2` generates M2 source/extension archives; packaging requires Python 3. Browser tests require Chromium (`CHROMIUM_PATH`, default /usr/bin/chromium) and localhost sockets. No remote publication or pushes.
-
-## Design and modules
-`src/entrypoints`: worker, popup, sidepanel and on-demand unlisted reader. `src/core`: Zod RPC, settings/session secrets, IndexedDB history and controller. `src/features/providers`: independent REST adapters. `src/features/browser`: bounded read-only DOM snapshot. `src/components`, `src/styles`: original responsive UI with light/dark/system, density and font preferences. `tests`: deterministic units, integrations, static local fixture pages and real Chromium renders with explicitly mocked APIs. `docs`: architecture, progress, decisions, test evidence and manual verification.
-
-## Privacy
-Keys default to trusted session storage. Local persistence only with explicit disclosure; browser storage is not a secret vault. Input values are not read at all; visible-page content is shared only after provider consent plus page-context opt-in. Reader snapshots are untrusted data, never executable instructions. No arbitrary code execution tool. No telemetry, remote executable code or background history collection. See docs/SECURITY.md and docs/KNOWN_LIMITATIONS.md.
-
-## Build inputs
-Both supplied documents were read in full: 11-page Vistara AI Build Prompts PDF and 280-line Vistara AI Master Prompt. Staged PDF gates govern progression: M0/M1 first; M2 cannot begin until the prior gate is verified. The unrelated original /workspace/Vistara appearance extension remains untouched. Initial specified stack/permissions were treated as the user-authorized baseline; no additions beyond that baseline without review.
-
-Packaging from source additionally requires Python 3 available as `python`; installing the prebuilt extension does not require Python or Node.
-
-Artifact retrieval: see docs/DELIVERY.md. ZIPs are in release/. The configured projectless output path is unavailable/read-only here; no filesystem path is presented as a working attachment link.
+Repository history and earlier M2 reports/artifacts are retained. Current instructions supersede historical Gemini-only Tasks/setup statements in earlier milestone documents.

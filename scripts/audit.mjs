@@ -13,7 +13,7 @@ for(const path of [manifest.background.service_worker,manifest.side_panel.defaul
 const findings=[];let files=0;let bytes=0;
 async function walk(dir){for(const entry of await readdir(dir,{withFileTypes:true})){const path=join(dir,entry.name);if(entry.isDirectory())await walk(path);else{files++;const data=await readFile(path);bytes+=data.length;if(/\.(js|html|css|json)$/.test(path)){const s=data.toString();
  if(/\b(?:AIza[\w-]{28,}|gsk_[\w-]{28,}|sk-[\w-]{28,})\b/.test(s))findings.push(path+': credential-shaped literal');
- if(/(?:unit-secret-value|fixture-key-not-a-real-secret|integration-fixture-credential|other-provider-fixture-key)/.test(s))findings.push(path+': test credential in production');
+ if(/(?:unit-secret-value|fixture-key-not-a-real-secret|integration-fixture-credential|other-provider-fixture-key|synthetic-custom-fixture-key|synthetic-fixture-credential|synthetic-hub-test-key|legacy-synthetic-key|agent-fixture-key-not-real)/.test(s))findings.push(path+': test credential in production');
  if(/\beval\s*\(|new\s+Function\s*\(/.test(s))findings.push(path+': executable string evaluation');
  if(/<script[^>]+src=["']https?:/i.test(s))findings.push(path+': remotely hosted script');
  if(/\.map$|\.env/.test(path))findings.push(path+': unexpected sensitive/build file');

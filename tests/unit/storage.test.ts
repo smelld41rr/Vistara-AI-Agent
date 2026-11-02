@@ -6,7 +6,7 @@ function storageArea() {
   const data: Record<string, unknown> = {};
   return {
     data,
-    get: vi.fn(async (key: string) => ({ [key]: data[key] })),
+    get: vi.fn(async (key: string | null) => key === null ? {...data} : ({ [key]: data[key] })),
     set: vi.fn(async (values: Record<string, unknown>) => { Object.assign(data, structuredClone(values)); }),
     remove: vi.fn(async (key: string) => { delete data[key]; }),
     clear: vi.fn(async () => { for (const key of Object.keys(data)) delete data[key]; }),
@@ -25,11 +25,12 @@ describe('storage and key isolation (mocked Chrome storage)', () => {
     expect(local.setAccessLevel).toHaveBeenCalledWith({ accessLevel: 'TRUSTED_CONTEXTS' });
     expect(session.setAccessLevel).toHaveBeenCalledWith({ accessLevel: 'TRUSTED_CONTEXTS' });
   });
-  it('returns conservative defaults when settings are missing or invalid', async () => {
-    expect(await getSettings()).toEqual(DEFAULT_SETTINGS);
+  it('migrates missing settings conservatively and preserves invalid saved settings', async () => {
+    expect(await getSettings()).toMatchObject(DEFAULT_SETTINGS);
     expect((await getSettings()).consent).toEqual({ gemini: false, groq: false });
     local.data.settings = { temperature: 'invalid', consent: { gemini: true, groq: true } };
-    expect(await getSettings()).toEqual(DEFAULT_SETTINGS);
+    await expect(getSettings()).rejects.toThrow('preserved');
+    expect(local.data.settings).toEqual({temperature:'invalid',consent:{gemini:true,groq:true}});
   });
   it('validates settings before saving them', async () => {
     const settings = structuredClone(DEFAULT_SETTINGS); settings.theme = 'dark';

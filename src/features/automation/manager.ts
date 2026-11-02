@@ -1,7 +1,9 @@
 import { BrowserEngine,SitePermissionNeeded,originPattern } from './browser';
 import { AgentStartSchema,AgentControlSchema,TaskSchema,terminal,type AgentTask } from './task-types';
 import { definitions,parsedCall,ResultSchema,type Call,type Result } from './contracts';
-import { getKey,getSettings } from '../../core/storage';
+import { getKey,getSettings,getSecrets } from '../../core/storage';
+import { selectedProfile } from '../provider-hub/profiles';
+import { agentProfileReady } from '../provider-hub/capabilities';
 import { createProvider,type Provider,type ProviderMessage,type ToolCall } from '../providers';
 import { pageContext,publicError,redact } from '../../core/security';
 const TASK_KEY='agent-task';
@@ -11,19 +13,20 @@ export class TaskManager{
  panelClosed(){if(this.task?.state==='running'){this.task.state='paused';this.task.result='Task panel closed. Paused before next action.';void this.save().catch(()=>{});}}
  constructor(){this.ready=this.restore();chrome.permissions.onRemoved?.addListener(()=>{if(this.task&&!terminal(this.task.state)){this.abort?.abort();void this.engine?.stop();this.task.state='interrupted';this.task.error='Permission changed/revoked. Start a new task after reviewing access.';void this.save().catch(()=>{});this.wake?.();}});}
  private async restore(){const value=(await chrome.storage.local.get(TASK_KEY))[TASK_KEY];const parsed=TaskSchema.safeParse(value);if(parsed.success){this.task=parsed.data;if(!terminal(this.task.state)){this.task.state='interrupted';this.task.activeAction='';delete this.task.pendingApproval;delete this.task.pendingOrigin;this.task.result='Background worker restarted. No action was replayed. Start a new task after inspecting the page.';await this.save();}}}
- private async save(){if(!this.task)return;const navigation=this.engine?.historyEntries?.();if(navigation)this.task.navigationHistory=navigation;this.task.updatedAt=Date.now();const secrets=await Promise.all([getKey('gemini'),getKey('groq')]);const safe=TaskSchema.parse(JSON.parse(redact(JSON.stringify(this.task),secrets)));await chrome.storage.local.set({[TASK_KEY]:safe});}
- async get(){await this.ready;if(!this.task)return null;const secrets=await Promise.all([getKey('gemini'),getKey('groq')]);return TaskSchema.parse(JSON.parse(redact(JSON.stringify(this.task),secrets)));}
+ private async save(){if(!this.task)return;const navigation=this.engine?.historyEntries?.();if(navigation)this.task.navigationHistory=navigation;this.task.updatedAt=Date.now();const secrets=await getSecrets();const safe=TaskSchema.parse(JSON.parse(redact(JSON.stringify(this.task),secrets)));await chrome.storage.local.set({[TASK_KEY]:safe});}
+ async get(){await this.ready;if(!this.task)return null;const secrets=await getSecrets();return TaskSchema.parse(JSON.parse(redact(JSON.stringify(this.task),secrets)));}
+ clearLocalState(){if(this.isBusy())throw new Error('Stop the active task before clearing data.');this.task=undefined;this.engine=undefined;this.abort=undefined;}
  isBusy(){return this.starting||this.processing||Boolean(this.task&&!terminal(this.task.state));}
  async start(raw:unknown){await this.ready;if(this.isBusy())throw new Error('Stop the current task first.');this.starting=true;try{return await this.begin(raw);}finally{this.starting=false;}}
  private async begin(raw:unknown){
   if(this.processing)throw new Error('Stop the current task before starting another.');
-  const args=AgentStartSchema.parse(raw);const settings=await getSettings();if(!settings.consent[settings.provider])throw new Error('Accept the selected provider disclosure in Settings first.');if(settings.provider!=='gemini')throw new Error('M2 function-calling controller currently requires Gemini. Groq read-only Chat is preserved.');
-  const key=await getKey('gemini');if(!key||!settings.models.gemini)throw new Error('Configure Gemini and explicitly select a model first.');
-  if(!await chrome.permissions.contains({origins:['https://generativelanguage.googleapis.com/*']}))throw new Error('Grant Gemini API access in Settings.');
+  const args=AgentStartSchema.parse(raw);const settings=await getSettings();const profile=selectedProfile(settings,'tasks');if(!profile.consent)throw new Error('Accept the selected Tasks provider disclosure in Settings first.');
+  const key=await getKey(profile.id);if(!key||!profile.model)throw new Error('Configure the Tasks profile key and explicitly select a model first.');if(!await agentProfileReady(profile,key))throw new Error('This profile/model/key has not passed text generation and safe function-calling compatibility. Test it in Provider Hub before browser actions.');
+  if(!await chrome.permissions.contains({origins:[new URL(profile.baseUrl).origin+'/*']}))throw new Error('Grant the selected API endpoint access in Settings.');
   const [tab]=await chrome.tabs.query({active:true,lastFocusedWindow:true});if(!tab?.id||!tab.url)throw new Error('Open a normal website and invoke Vistara from its toolbar.');const origin=new URL(originPattern(tab.url).slice(0,-2)).origin;
-  const secrets=await Promise.all([getKey('gemini'),getKey('groq')]);this.abort=new AbortController();this.engine=new BrowserEngine(tab.id,this.abort.signal,redact(args.goal,secrets),this.task?.navigationHistory??[]);
+  const secrets=await getSecrets();this.abort=new AbortController();this.engine=new BrowserEngine(tab.id,this.abort.signal,redact(args.goal,secrets),this.task?.navigationHistory??[]);
   this.task={id:crypto.randomUUID(),goal:redact(args.goal,secrets),state:'waiting_for_permission',tabId:tab.id,site:origin,step:0,maxSteps:settings.maxSteps,requests:0,activeAction:'Awaiting site access',result:'',pendingOrigin:origin,trace:[],startedAt:Date.now(),updatedAt:Date.now()};this.approved=undefined;
-  this.processing=true;try{await this.save();}catch(error){this.processing=false;this.task.state='failed';throw error;}const task=this.task;const provider=createProvider('gemini',key);
+  this.processing=true;try{await this.save();}catch(error){this.processing=false;this.task.state='failed';throw error;}const task=this.task;const provider=createProvider(profile.id,key,{profile});
   setTimeout(()=>{void this.run(provider,settings,task).catch(async error=>{if(this.task?.id===task.id){task.state='failed';task.error=publicError(error).message;this.processing=false;try{await this.save();}catch{/* A failed disk cannot persist recovery; UI get still returns state. */}}});},10);
   return task;
  }
@@ -41,8 +44,9 @@ export class TaskManager{
  private async active(){const task=this.task!;while(['paused','waiting_for_permission','waiting_for_approval'].includes(task.state)){if(this.abort?.signal.aborted)throw new DOMException('Stopped','AbortError');await new Promise<void>(resolve=>{this.wake=resolve;});}this.wake=undefined;if(this.abort?.signal.aborted||terminal(task.state))throw new DOMException('Stopped','AbortError');}
  private async need(origin:string){const t=this.task!;t.pendingOrigin=origin;t.state='waiting_for_permission';t.activeAction='Awaiting site access';await this.save();await this.active();}
  private async run(provider:Provider,settings:Awaited<ReturnType<typeof getSettings>>,task:AgentTask){
+  const profile=selectedProfile(settings,'tasks');
   const messages:ProviderMessage[]=[{role:'user',content:task.goal}];const failures=new Map<string,number>();
-  const secrets=await Promise.all([getKey('gemini'),getKey('groq')]);
+  const secrets=await getSecrets();
   try{
    await this.active();
    while(task.step<task.maxSteps){
@@ -50,9 +54,9 @@ export class TaskManager{
     try{observation=await this.engine!.observe();}catch(error){if(error instanceof SitePermissionNeeded){await this.need(error.origin);continue;}throw error;}
     task.tabId=this.engine!.tabId;task.site=new URL(observation.page.url).origin;
     if(/captcha|verify you are human|human verification/i.test(observation.page.title+' '+observation.page.text)||observation.page.forms.some(form=>/log.?in|sign.?in/i.test(form.name)||form.fields.some(field=>field.type==='password'))){throw new Error('Manual handoff required: CAPTCHA or authentication challenge. No bypass attempted.');}
-    task.activeAction='Gemini: choosing a browser tool';task.requests++;if(task.requests>task.maxSteps+2)throw new Error('request_budget_reached');await this.save();
+    task.activeAction=profile.name+': choosing a browser tool';task.requests++;if(task.requests>task.maxSteps+2)throw new Error('request_budget_reached');await this.save();
     const lastAssistant=messages.findLastIndex(message=>message.role==='assistant');const history=lastAssistant>=0?[messages[0]!,...messages.slice(lastAssistant)]:messages;
-    const result=await provider.generate({model:settings.models.gemini,messages:[...history,{role:'user',content:pageContext(JSON.parse(redact(JSON.stringify({...observation,taskTabs:[...this.engine!.tabs]}),secrets)),settings.contextBudget)}],system:PROMPT,temperature:settings.temperature,maxOutputTokens:settings.maxOutputTokens,timeoutMs:settings.timeoutMs,retries:settings.retries,signal:this.abort!.signal,tools:definitions()});
+    const result=await provider.generateWithTools({model:profile.model,messages:[...history,{role:'user',content:pageContext(JSON.parse(redact(JSON.stringify({...observation,taskTabs:[...this.engine!.tabs]}),secrets)),settings.contextBudget)}],system:PROMPT,temperature:profile.temperature,maxOutputTokens:profile.maxOutputTokens,timeoutMs:profile.timeoutMs,retries:settings.retries,signal:this.abort!.signal,tools:definitions()});
     await this.active();
     if(!result.toolCalls?.length){task.state=task.trace.some(x=>['unverified','failed'].includes(x.result.status))?'failed':'completed';task.result='Model report (not independently verified goal completion): '+redact(result.text,secrets);if(task.trace.length===0)task.result='No browser actions were performed. '+task.result;break;}
     if(result.toolCalls.length>6)throw new Error('Too many tool calls in one model response.');
@@ -60,7 +64,7 @@ export class TaskManager{
     messages.push({role:'assistant',content:result.text,toolCalls:result.toolCalls});
     for(const modelCall of result.toolCalls){
      await this.active();if(task.step>=task.maxSteps)throw new Error('step_limit_reached');let call:Call;
-     try{call=parsedCall({name:modelCall.name,arguments:modelCall.arguments});}catch{throw new Error('invalid_tool_call: Gemini returned an unknown tool or invalid arguments. Nothing executed.');}
+     try{call=parsedCall({name:modelCall.name,arguments:modelCall.arguments});}catch{throw new Error('invalid_tool_call: The provider returned an unknown tool or invalid arguments. Nothing executed.');}
      if(secrets.some(key=>key&&JSON.stringify(call).includes(key)))throw new Error('credential_refused: A tool argument contained a provider credential.');
      task.activeAction=call.name;await this.save();let outcome:Result;
      while(true){

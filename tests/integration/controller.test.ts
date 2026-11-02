@@ -1,3 +1,4 @@
+import { profileBinding } from '../../src/features/provider-hub/capabilities';
 /** Mock-browser integration: actual controller and HTTP adapter, simulated Chrome APIs/storage. */
 import { readFileSync } from 'node:fs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -8,6 +9,7 @@ vi.mock('../../src/core/storage', () => ({
   secureStorage: vi.fn(async () => {}), recoverInterrupted: vi.fn(async () => {}),
   getSettings: vi.fn(async () => structuredClone(memory.settings)),
   saveSettings: vi.fn(async (settings: Settings) => { memory.settings = structuredClone(settings); return settings; }),
+  getSecrets: vi.fn(async () => Object.values(memory.keys)),
   getKey: vi.fn(async (id: string) => memory.keys[id] ?? ''),
   setKey: vi.fn(async (id: string, key: string) => { memory.keys[id] = key; }),
   removeKey: vi.fn(async (id: string) => { delete memory.keys[id]; }),
@@ -20,6 +22,8 @@ vi.mock('../../src/core/storage', () => ({
 }));
 import { Controller } from '../../src/core/controller';
 import { DEFAULT_SETTINGS } from '../../src/core/schemas';
+import { resolveHub } from '../../src/features/provider-hub/profiles';
+import { emptyDiagnostics } from '../../src/features/provider-hub/manager';
 import { readPage } from '../../src/features/browser/reader';
 import * as storage from '../../src/core/storage';
 
@@ -223,4 +227,43 @@ describe('controller and adapter integration (mock-browser, no live AI)', () => 
     expect(chromeMock.tabs.query).not.toHaveBeenCalled();
     expect(saved().messages.at(-1)?.status).toBe('interrupted');
   });
+  it('uses non-streaming when explicitly selected, without switching profiles',async()=>{
+    memory.settings.hub=resolveHub(memory.settings);memory.settings.hub.profiles[0]!.streaming=false;
+    fetcher.mockResolvedValue(new Response(JSON.stringify({candidates:[{content:{parts:[{text:'Non-stream response'}]},finishReason:'STOP'}]})));
+    await new Controller().handle(request('nonstream'));await until(done);
+    expect(saved().messages.at(-1)?.content).toBe('Non-stream response');
+    expect(fetcher.mock.calls[0]![0]).toContain(':generateContent');expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+  it('falls back on a broken stream only with explicit opt-in, no emitted text and passing text diagnostic',async()=>{
+    memory.settings.hub=resolveHub(memory.settings);const p=memory.settings.hub.profiles[0]!;p.options.fallbackNonStreaming=true;p.diagnostics=emptyDiagnostics(await profileBinding(p,testKey));p.diagnostics.text={status:'pass',message:'Simulated text proof',at:1};
+    fetcher.mockResolvedValueOnce(new Response('data: {bad}\n\n')).mockResolvedValueOnce(new Response(JSON.stringify({candidates:[{content:{parts:[{text:'Recovered same profile'}]},finishReason:'STOP'}]})));
+    await new Controller().handle(request('fallback'));await until(done);
+    expect(saved().messages.at(-1)?.content).toBe('Recovered same profile');expect(fetcher).toHaveBeenCalledTimes(2);
+    expect(fetcher.mock.calls.every(([url])=>String(url).startsWith('https://generativelanguage.googleapis.com/'))).toBe(true);
+  });
+  it.each([401,402,429,503])('never uses fallback to evade HTTP %s',async status=>{
+    memory.settings.hub=resolveHub(memory.settings);const p=memory.settings.hub.profiles[0]!;p.options.fallbackNonStreaming=true;p.diagnostics=emptyDiagnostics(await profileBinding(p,testKey));p.diagnostics.text={status:'pass',message:'Simulated proof',at:1};
+    fetcher.mockImplementation(async()=>new Response('provider failure',{status}));await new Controller().handle(request('no-fallback'));await until(done);expect(fetcher).toHaveBeenCalledTimes(1);expect(saved().messages.at(-1)?.status).toBe('interrupted');
+  });
+  it('rejects cross-profile history before transmitting any prompt',async()=>{
+    memory.conversations.set('old-profile',{id:'old-profile',title:'Old',provider:'groq',model:'old',updatedAt:1,messages:[{id:'x',role:'user',content:'private old history'}],usage:{requests:1,inputTokens:null,outputTokens:null}});
+    await expect(new Controller().handle(request('switch','new prompt',false,'old-profile'))).rejects.toThrow();expect(fetcher).not.toHaveBeenCalled();expect(memory.conversations.get('old-profile')?.messages[0]?.content).toBe('private old history');
+  });
+
+  it('locks provider diagnostics before async authorization, while cancellation stays available',async()=>{
+    const controller=new Controller();const profile=resolveHub(memory.settings).profiles[0]!;
+    fetcher.mockImplementation(async(_url,options)=>new Promise((_,reject)=>options?.signal?.addEventListener('abort',()=>reject(new DOMException('Stopped','AbortError')))));
+    const pending=controller.handle({id:'diag-lock',type:'PROFILE_DIAG',payload:{profile,stage:'text'}});await until(()=>fetcher.mock.calls.length===1);
+    await expect(controller.handle(request('overlap'))).rejects.toThrow('diagnostics');
+    await expect(controller.handle({id:'second-diag',type:'PROFILE_DIAG',payload:{profile,stage:'text'}})).rejects.toThrow('diagnostics');
+    await controller.handle({id:'stop-diag',type:'PROFILE_CANCEL',payload:{id:profile.id}});
+    expect(await pending).toMatchObject({report:{text:{code:'cancelled'}}});expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+
+  it('blocks old history after an endpoint change even when local profile ID is unchanged',async()=>{
+    memory.settings.hub=resolveHub(memory.settings);memory.settings.hub.profiles[0]!.baseUrl='https://another-provider.example/v1beta';
+    memory.conversations.set('old-endpoint',{id:'old-endpoint',title:'Old',provider:'gemini',model:'old',updatedAt:1,messages:[{id:'x',role:'user',content:'private old endpoint history'}],usage:{requests:1,inputTokens:null,outputTokens:null}});
+    await expect(new Controller().handle(request('endpoint-change','new prompt',false,'old-endpoint'))).rejects.toThrow('endpoint');expect(fetcher).not.toHaveBeenCalled();
+  });
+
 });

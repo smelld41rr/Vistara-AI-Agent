@@ -1,7 +1,7 @@
 import type { ZodType } from 'zod';
 
-export type ProviderId = 'gemini' | 'groq';
-export type ErrorCode = 'auth_invalid' | 'forbidden' | 'rate_limited' | 'quota_exhausted' | 'billing_required' | 'model_unavailable' | 'network' | 'timeout' | 'invalid_request' | 'content_blocked' | 'unknown' | 'cancelled';
+export type ProviderId = string;
+export type ErrorCode = 'auth_invalid' | 'forbidden' | 'rate_limited' | 'quota_exhausted' | 'billing_required' | 'model_unavailable' | 'network' | 'timeout' | 'invalid_request' | 'content_blocked' | 'unknown' | 'cancelled' | 'temporarily_unavailable' | 'stream_parser' | 'incompatible_capabilities' | 'redirect_blocked' | 'permission_missing' | 'unsupported_streaming';
 export interface Model {
   id: string;
   name: string;
@@ -35,6 +35,10 @@ export type StreamEvent = { type: 'delta'; text: string } | { type: 'done'; resu
 export interface Provider {
   readonly id: ProviderId;
   readonly displayName: string;
+  testConnection(request:GenerateRequest):Promise<GenerateResult>;
+  generateWithTools(request:GenerateRequest):Promise<GenerateResult>;
+  cancel():void;
+  getCapabilities():Model['capabilities'];
   listModels(signal?: AbortSignal): Promise<Model[]>;
   generate(request: GenerateRequest): Promise<GenerateResult>;
   stream(request: GenerateRequest): AsyncGenerator<StreamEvent>;

@@ -1,3 +1,7 @@
+# M2.1 update
+
+Use `Vistara-AI-M2.1-Chrome.zip` (version 0.2.1). Follow [current Provider Hub instructions](PROVIDER_HUB_USAGE.md) for profile migration and separate text/stream/tool checks. Earlier fixed Gemini/Groq setup below is historical; M2.1 replaces it with dynamic profiles. Existing installation/storage should be preserved by reloading the same unpacked extension.
+
 # Install on Windows (Chrome 120+)
 
 1. Download Vistara-AI-Chrome.zip and extract it to a permanent folder. Do not select the ZIP itself.

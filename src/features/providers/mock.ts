@@ -9,6 +9,10 @@ export class MockProvider implements Provider {
   readonly requests: GenerateRequest[] = [];
   #steps: MockStep[];
   constructor(steps: MockStep[]) { this.#steps = [...steps]; }
+  cancel(){}
+  getCapabilities(){return {text:true,tools:true,streaming:true,structured:true,images:false} as const;}
+  testConnection(input:GenerateRequest){return this.generate(input);}
+  generateWithTools(input:GenerateRequest){return this.generate(input);}
   async listModels(): Promise<Model[]> { return [{ id: 'fixture-model', name: 'Fixture model (test only)', capabilities: { text: true, tools: true, streaming: true, structured: true, images: false }, freeTier: 'unknown' }]; }
   async #next(input: GenerateRequest): Promise<MockStep> {
     if (input.signal?.aborted) throw new ProviderError('cancelled');

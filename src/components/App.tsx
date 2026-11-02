@@ -55,12 +55,12 @@ export function App() {
     <nav className="main-nav" aria-label="Main navigation">{nav.map(({ name, icon: Icon }) => <button key={name} onClick={() => setView(name)} className={view === name ? 'selected' : ''} aria-current={view === name ? 'page' : undefined} title={name}><Icon size={17}/><span>{name === 'Agent Tasks' ? 'Tasks' : name === 'Extract Data' ? 'Extract' : name}</span></button>)}</nav>
     {notice && <div role={notice.kind === 'error' ? 'alert' : 'status'} className={`toast ${notice.kind}`}><span>{notice.message}</span><button aria-label="Dismiss notification" className="icon-button" onClick={() => setNotice(undefined)}><X size={15}/></button></div>}
     <main className={`main-content ${view === 'Chat' ? 'chat-main' : ''}`}>
-      {view === 'Chat' && <ChatView onDeleted={reload} onBusyChange={setChatBusy} resetKey={resetKey} settings={boot.settings} hasKey={boot.keys[boot.settings.provider]} conversation={conversation} onConversation={updateConversation} onSelectConversation={setCurrentId} onSettings={() => setView('Settings')} notify={notify}/>}
-      {view === 'Agent Tasks' && <AgentView/>}
+      {view === 'Chat' && <ChatView onDeleted={reload} onBusyChange={setChatBusy} resetKey={resetKey} settings={boot.settings} hasKey={Boolean(boot.keys[boot.settings.provider])} conversation={conversation} onConversation={updateConversation} onSelectConversation={setCurrentId} onSettings={() => setView('Settings')} notify={notify}/>}
+      {view === 'Agent Tasks' && <AgentView settings={boot.settings}/>}
       {view === 'Settings' && <SettingsView boot={boot} saveSettings={saveSettings} reload={reload} notify={notify}/>}
       {view === 'History' && <HistoryView conversations={boot.conversations} onOpen={(id) => { setCurrentId(id); setView('Chat'); }} reload={reload} notify={notify}/>}
       {pending[view] && <section className="pending-state"><div className="pending-symbol"><Workflow size={28}/></div><div className="eyebrow">{pending[view]?.milestone}</div><h1>{view}</h1><span className="status-pill">Not built yet</span><p>{pending[view]?.description}</p><p className="muted">This screen is not built yet. Chat remains read-only; browser actions run from Tasks with explicit consent and approvals. Workflows and schedules remain pending.</p><button className="secondary" onClick={() => setView('Chat')}><ArrowLeft size={15}/> Back to Chat</button></section>}
     </main>
-    <footer className="app-footer"><span className="local-dot"/> Stored on this device<span>v0.2.0 · M2</span></footer>
+    <footer className="app-footer"><span className="local-dot"/> Stored on this device<span>v0.2.1 · Provider Hub</span></footer>
   </div>;
 }

@@ -48,12 +48,19 @@ try{
 
  await check('actual TaskManager + Gemini REST function calls drive real DOM with fresh approval',async()=>{
   await initial.goto(server.url+'/fixtures/automation.html');activeId=1;
-  await build({configFile:false,logLevel:'error',build:{lib:{entry:resolve('src/features/automation/manager.ts'),formats:['iife'],name:'M2Tasks',fileName:()=> 'manager.js'},outDir:temporary,emptyOutDir:false}});
+  await build({configFile:false,logLevel:'error',build:{lib:{entry:resolve('tests/browser/agent-entry.ts'),formats:['iife'],name:'M2Tasks',fileName:()=> 'manager.js'},outDir:temporary,emptyOutDir:false}});
   grants.add('https://generativelanguage.googleapis.com/*');let modelCalls=0;const requests=[];
   await panel.route('https://generativelanguage.googleapis.com/**',async route=>{
    const headers={'access-control-allow-origin':'*','access-control-allow-headers':'*','access-control-allow-methods':'POST, GET, OPTIONS'};
    if(route.request().method()==='OPTIONS'){await route.fulfill({status:204,headers});return;}
-   const body=route.request().postDataJSON();requests.push(body);const source=body.contents.at(-1).parts[0].text;
+   const body=route.request().postDataJSON();requests.push(body);
+   if(body.tools?.[0]?.functionDeclarations?.[0]?.name==='vistara_compatibility_probe'){
+    const last=body.contents.at(-1).parts[0];const nonce=last.functionResponse?JSON.parse(last.functionResponse.response.result).nonce:body.contents[0].parts[0].text.match(/nonce ([\w-]+)/)[1];
+    const part=last.functionResponse?{text:'Probe '+nonce}:{functionCall:{id:'probe',name:'vistara_compatibility_probe',args:{nonce,value:'ping'}}};
+    await route.fulfill({status:200,headers,body:JSON.stringify({candidates:[{content:{parts:[part]},finishReason:'STOP'}]})});return;
+   }
+   if(!body.tools){await route.fulfill({status:200,headers,body:JSON.stringify({candidates:[{content:{parts:[{text:'Fixture text diagnostic'}]},finishReason:'STOP'}]})});return;}
+   const source=body.contents.at(-1).parts[0].text;
    const json=source.slice(source.indexOf('>\n')+2,source.lastIndexOf('\n</UNTRUSTED_PAGE_DATA>'));
    const observation=JSON.parse(json);let part;
    if(modelCalls===0)part={functionCall:{id:'find-1',name:'find_element',args:{query:'Search query'}}};
@@ -64,11 +71,12 @@ try{
   await panel.evaluate(()=>{
    const local={settings:{provider:'gemini',models:{gemini:'fixture-function-model',groq:''},consent:{gemini:true,groq:false},maxSteps:5}};
    const session={'key:gemini':'fixture-agent-key-not-real'};
-   const area=values=>({get:async name=>({[name]:values[name]}),set:async data=>Object.assign(values,data)});
+   const area=values=>({get:async name=>name===null?{...values}:({[name]:values[name]}),set:async data=>Object.assign(values,data)});
    window.chrome.storage={local:area(local),session:area(session)};window.chrome.permissions.onRemoved={addListener:()=>{}};
    window.chrome.tabs.query=async()=>[await window.chrome.tabs.get(1)];
   });
   await panel.addScriptTag({path:join(temporary,'manager.js')});
+  await panel.evaluate(async()=>{const hub=new window.M2Tasks.HubManager();const profile=(await window.M2Tasks.getSettings()).hub.profiles[0];const config={...profile};delete config.diagnostics;for(const stage of ['text','tools']){const result=await hub.diagnose({profile:config,stage});if(result.report[stage].status!=='pass')throw new Error(JSON.stringify(result));}});
   const task=await panel.evaluate(async()=>{window.manager=new window.M2Tasks.TaskManager();return window.manager.start({goal:'Find Search query and type test query without submitting',sharePage:true});});
   assert.equal(task.state,'waiting_for_permission');await panel.evaluate(id=>window.manager.control({id,action:'grant'}),task.id);
   const poll=async states=>{const until=Date.now()+12000;while(Date.now()<until){const task=await panel.evaluate(()=>window.manager.get());if(states.includes(task.state))return task;await new Promise(r=>setTimeout(r,40));}throw new Error('Manager fixture timeout: '+JSON.stringify(await panel.evaluate(()=>window.manager.get())));};

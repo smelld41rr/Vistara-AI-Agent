@@ -1,9 +1,12 @@
 import { useEffect,useState } from 'react';
 import { Play,Pause,Square,ShieldCheck,Globe2,LoaderCircle } from 'lucide-react';
+import type { Settings } from '../core/schemas';
+import { selectedProfile } from '../features/provider-hub/profiles';
 import { rpc } from '../core/client';
 import { TaskSchema,terminal,type AgentTask } from '../features/automation/task-types';
 import { errorMessage } from './types';
-export function AgentView(){
+export function AgentView({settings}:{settings:Settings}){
+ const profile=selectedProfile(settings,'tasks');
  const [task,setTask]=useState<AgentTask|null>(null);const [goal,setGoal]=useState('');const [share,setShare]=useState(false);const [error,setError]=useState('');const [busy,setBusy]=useState(false);
  const refresh=async()=>{try{const raw=await rpc('AGENT_GET');setTask(raw?TaskSchema.parse(raw):null);}catch(e){setError(errorMessage(e));}};
  useEffect(()=>{const port=chrome.runtime.connect?.({name:'vistara-agent'});void refresh();const timer=setInterval(()=>void refresh(),700);return ()=>{clearInterval(timer);port?.disconnect();};},[]);
@@ -17,8 +20,9 @@ export function AgentView(){
  };
  const start=async()=>{setBusy(true);setError('');try{setTask(TaskSchema.parse(await rpc('AGENT_START',{goal,sharePage:share})));setShare(false);}catch(e){setError(errorMessage(e));}finally{setBusy(false);}};
  return <section className="page-view agent-view"><div className="page-heading"><div className="eyebrow">REAL BROWSER TOOLS · M2</div><h1>Give your browser a goal.</h1><p>Watch every action. Approve consequential steps. Stay in control.</p></div>
+ <p className="field-help">Tasks provider: {profile.name} · {profile.model||'No model selected'}. A successful text and safe tool roundtrip is required.</p>
  <label className="field-label" htmlFor="agent-goal">Your goal</label><textarea id="agent-goal" className="agent-goal" rows={4} maxLength={16000} value={goal} onChange={e=>setGoal(e.target.value)} disabled={Boolean(task&&!terminal(task.state))} placeholder={'Find a search field and type "test query" without submitting.'}/>
- <label className="check-label"><input type="checkbox" checked={share} onChange={e=>setShare(e.target.checked)} disabled={Boolean(task&&!terminal(task.state))}/>I authorize this task and sharing relevant page/control observations with my selected Gemini model.</label>
+ <label className="check-label"><input type="checkbox" checked={share} onChange={e=>setShare(e.target.checked)} disabled={Boolean(task&&!terminal(task.state))}/>I authorize this task and sharing relevant page/control observations with the selected Tasks provider/model.</label>
  <p className="field-help">Separate from Chat page context. No passwords, OTPs, tokens or payment data. Enter exact text to type in your goal. Sites require per-task access; field edits and ambiguous/sensitive actions ask for fresh confirmation.</p>
  <button className="primary" disabled={busy||!share||!goal.trim()||Boolean(task&&!terminal(task.state))} onClick={()=>void start()}><Play size={15}/>Start task</button>
  {error&&<div className="error-card" role="alert">{error}</div>}

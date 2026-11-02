@@ -2,9 +2,10 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { ArrowDown, ArrowUp, BookOpen, Check, ChevronDown, Copy, ExternalLink, FileText, Globe2, Link2, LoaderCircle, MessageSquare, RefreshCw, ShieldCheck, Square, Trash2, X } from 'lucide-react';
 import type { Conversation, Settings } from '../core/schemas';
 import type { PageSnapshot } from '../features/browser/types';
+import { selectedProfile,sameDestination } from '../features/provider-hub/profiles';
 import { rpc } from '../core/client';
 import { Markdown } from './ui/Markdown';
-import { errorMessage, providerNames, type Notify } from './types';
+import { errorMessage, type Notify } from './types';
 
 interface Props { onDeleted: () => Promise<void>; onBusyChange: (busy: boolean) => void; resetKey: number; settings: Settings; hasKey: boolean; conversation?: Conversation; onConversation: (c: Conversation) => void; onSelectConversation: (id: string) => void; onSettings: () => void; notify: Notify }
 const prompts = [
@@ -14,6 +15,7 @@ const prompts = [
   { icon: BookOpen, title: 'Explore an idea', description: 'Think it through together', prompt: 'Help me think through an idea. Start by asking what I am working on.', page: false },
 ];
 export function ChatView({ onDeleted, onBusyChange, resetKey, settings, hasKey, conversation, onConversation, onSelectConversation, onSettings, notify }: Props) {
+  const profile=selectedProfile(settings,'chat');
   const [prompt, setPrompt] = useState('');
   const [includePage, setIncludePage] = useState(false);
   const [snapshot, setSnapshot] = useState<PageSnapshot>();
@@ -75,8 +77,8 @@ export function ChatView({ onDeleted, onBusyChange, resetKey, settings, hasKey, 
   };
   const send = async (text: string) => {
     if (!text.trim() || busy) return;
-    if (!hasKey || !settings.models[settings.provider]) { onSettings(); notify('Add your API key, discover models, and choose one to start.'); return; }
-    if (!settings.consent[settings.provider]) { onSettings(); notify('Review and accept the provider disclosure before sending a message.'); return; }
+    if (!hasKey || !profile.model) { onSettings(); notify('Add your API key, discover models, and choose one to start.'); return; }
+    if (!profile.consent) { onSettings(); notify('Review and accept the provider disclosure before sending a message.'); return; }
     pendingStop.current = false; setStopping(false); setBusy(true); starting.current = true; active.current = undefined; setDraft(''); setError(''); setPendingPrompt(text.trim()); setPrompt('');
     activeConversation.current = conversation?.id;
     try {
@@ -102,10 +104,11 @@ export function ChatView({ onDeleted, onBusyChange, resetKey, settings, hasKey, 
   };
   const messages = conversation?.messages ?? [];
   const lastUser = [...messages].reverse().find((m) => m.role === 'user');
-  const model = settings.models[settings.provider];
+  const model = profile.model;
   return <div className="chat-view">
-    <div className="context-bar"><div><span className={`status-dot ${hasKey && model ? 'ready' : ''}`}/><button className="text-button provider-button" onClick={onSettings}>{providerNames[settings.provider]} <ChevronDown size={13}/></button></div><span className="model-name" title={model || 'No model selected'}>{model ? model.replace(/^models\//, '') : 'Choose a model'}</span></div>
+    <div className="context-bar"><div><span className={`status-dot ${hasKey && model ? 'ready' : ''}`}/><button className="text-button provider-button" onClick={onSettings}>{profile.name} <ChevronDown size={13}/></button></div><span className="model-name" title={model || 'No model selected'}>{model ? model.replace(/^models\//, '') : 'Choose a model'}</span></div>
     <div className="chat-scroll">
+      {conversation&&!sameDestination(conversation,profile)&&<div className="error-card">This history belongs to another profile or endpoint. Start a new conversation to use {profile.name}; earlier messages will not be forwarded.</div>}
       {!messages.length && !busy && <div className="welcome">
         <div className="welcome-art" aria-hidden="true"><span className="orbit orbit-one"/><span className="orbit orbit-two"/><span className="art-core"><svg viewBox="0 0 44 44" fill="none"><path d="m10 12 12 21 12-21M17 12l5 9 5-9" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg></span><span className="art-spark s-one"/><span className="art-spark s-two"/></div>
         <div className="eyebrow">A CLEARER WAY TO WORK</div><h1>What’s on your mind?</h1><p className="welcome-copy">Bring a question, a page, or a little curiosity.<br/>Let’s make sense of it together.</p>
@@ -122,8 +125,8 @@ export function ChatView({ onDeleted, onBusyChange, resetKey, settings, hasKey, 
     </div>
     {snapshot && <section className="page-preview"><header><strong><FileText size={14}/> Page preview</strong><button className="icon-button" aria-label="Close page preview" onClick={() => setSnapshot(undefined)}><X size={14}/></button></header><p className="preview-title">{snapshot.title}</p><p className="preview-url">{snapshot.url}</p><p>{snapshot.text.slice(0, 500)}{snapshot.text.length > 500 ? '…' : ''}</p><small>{snapshot.headings.length} headings · {snapshot.links.length} links · {snapshot.text.length.toLocaleString()} characters{snapshot.truncated ? ' · truncated' : ''}</small>{snapshot.warnings.map((warning) => <small className="warning-line" key={warning}>{warning}</small>)}<div className="privacy-hint">Preview stays on this device. Enable page context to include a fresh snapshot in your next message.</div></section>}
     <form className="composer-wrap" onSubmit={submit}>
-      <div className="composer"><textarea ref={textarea} aria-label="Message Vistara" placeholder="Ask anything, or explore this page…" value={prompt} maxLength={16000} rows={3} disabled={busy} onChange={(e) => setPrompt(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); void send(prompt); } }}/><div className="composer-tools"><label className={`context-toggle ${includePage ? 'on' : ''}`}><input type="checkbox" checked={includePage} disabled={busy} onChange={(e) => setIncludePage(e.target.checked)}/><Globe2 size={14}/> Page context <span>{includePage ? 'On' : 'Off'}</span></label><div className="composer-right"><button type="button" className="icon-button" title="Preview current page locally" aria-label="Preview current page" disabled={reading || busy} onClick={() => void preview()}>{reading ? <LoaderCircle size={16} className="spin"/> : <FileText size={16}/>}</button>{busy ? <button type="button" className="send-button stop" disabled={stopping} onClick={() => void stop()} aria-label="Stop response" title="Stop response"><Square size={14} fill="currentColor"/></button> : <button type="submit" className="send-button" disabled={!prompt.trim()} aria-label="Send message"><ArrowUp size={18}/></button>}</div></div></div>
-      <p className="composer-disclosure">{includePage ? <>Current page content will be sent to {providerNames[settings.provider]}.</> : <>Your message goes to {providerNames[settings.provider]}. Page context is off.</>}</p>
+      <div className="composer"><textarea ref={textarea} aria-label="Message Vistara" placeholder="Ask anything, or explore this page…" value={prompt} maxLength={16000} rows={3} disabled={busy} onChange={(e) => setPrompt(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); void send(prompt); } }}/><div className="composer-tools"><label className={`context-toggle ${includePage ? 'on' : ''}`}><input type="checkbox" checked={includePage} disabled={busy} onChange={(e) => setIncludePage(e.target.checked)}/><Globe2 size={14}/> Page context <span>{includePage ? 'On' : 'Off'}</span></label><div className="composer-right"><button type="button" className="icon-button" title="Preview current page locally" aria-label="Preview current page" disabled={reading || busy} onClick={() => void preview()}>{reading ? <LoaderCircle size={16} className="spin"/> : <FileText size={16}/>}</button>{busy ? <button type="button" className="send-button stop" disabled={stopping} onClick={() => void stop()} aria-label="Stop response" title="Stop response"><Square size={14} fill="currentColor"/></button> : <button type="submit" className="send-button" disabled={!prompt.trim()||Boolean(conversation&&!sameDestination(conversation,profile))} aria-label="Send message"><ArrowUp size={18}/></button>}</div></div></div>
+      <p className="composer-disclosure">{includePage ? <>Current page content will be sent to {profile.name}.</> : <>Your message goes to {profile.name}. Page context is off.</>}</p>
       {conversation && <details className="usage"><summary>Conversation usage <ArrowDown size={11}/></summary><div>{conversation.usage.requests} requests · Input tokens: {conversation.usage.inputTokens ?? 'unavailable'} · Output tokens: {conversation.usage.outputTokens ?? 'unavailable'}<br/>Remaining provider quota is unavailable. No unlimited free usage.</div></details>}
     </form>
   </div>;

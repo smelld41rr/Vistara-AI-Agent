@@ -7,6 +7,9 @@ export function installMockChrome({ snapshot, seededConversation }) {
     theme: 'light', compact: false, fontSize: 14, temperature: 0.4, maxOutputTokens: 2048,
     timeoutMs: 30000, retries: 1, contextBudget: 12000, maxSteps: 12,
   };
+  const profile=kind=>({id:kind,name:kind==='gemini'?'Google Gemini':'Groq',kind,protocol:kind==='gemini'?'gemini':'openai',baseUrl:kind==='gemini'?'https://generativelanguage.googleapis.com/v1beta':'https://api.groq.com/openai/v1',model:'',consent:false,discover:true,streaming:true,tools:true,temperatureEnabled:true,temperature:0.3,timeoutMs:45000,maxOutputTokens:2048,localHttp:false,options:{tokenParameter:'max_tokens',streamUsage:false,fallbackNonStreaming:false}});
+  settings.hub={version:1,profiles:[profile('gemini'),profile('groq')],chatDefault:'gemini',tasksDefault:'gemini'};
+  const diagnosticReports={};
   const state = { settings, conversations: seededConversation ? [seededConversation] : [], keys: { gemini: false, groq: false }, requests, active: null, nextChatError: null };
   const model = { id: 'fixture-model', name: 'Fixture model (mock only)', capabilities: { text: true, tools: 'unknown', streaming: true, structured: 'unknown', images: 'unknown' }, freeTier: 'unknown' };
   const emit = message => { for (const listener of listeners) listener(message, { id: 'vistara-fixture' }, () => {}); };
@@ -14,11 +17,16 @@ export function installMockChrome({ snapshot, seededConversation }) {
     state.conversations = [conversation, ...state.conversations.filter(c => c.id !== conversation.id)];
   };
   const dataFor = async (type, payload = {}) => {
-    requests.push({ type, payload: type === 'KEY_SET' ? { ...payload, key: '[REDACTED]' } : payload });
+    requests.push({ type, payload: ['KEY_SET','PROFILE_SAVE','PROFILE_DIAG'].includes(type) ? { ...payload, key: '[REDACTED]' } : payload });
     switch (type) {
       case 'AGENT_GET': return null;
       case 'BOOT': return globalThis.structuredClone({ settings: state.settings, conversations: state.conversations, keys: state.keys });
       case 'SETTINGS_SAVE': state.settings = globalThis.structuredClone(payload.settings); return state.settings;
+      case 'PROFILE_SAVE': {const p=globalThis.structuredClone(payload.profile);p.diagnostics=diagnosticReports[p.id];const profiles=state.settings.hub.profiles;const i=profiles.findIndex(x=>x.id===p.id);if(i<0)profiles.push(p);else profiles[i]=p;if(payload.key)state.keys[p.id]=true;state.settings.models[p.id]=p.model;state.settings.consent[p.id]=p.consent;return p;}
+      case 'PROFILE_DEFAULT':state.settings.hub[payload.target==='chat'?'chatDefault':'tasksDefault']=payload.id;if(payload.target==='chat')state.settings.provider=payload.id;return state.settings.hub;
+      case 'PROFILE_DIAG':{const p=payload.profile;const unverified={status:'unverified',message:'Not tested (scripted UI fixture).',at:0};const report=diagnosticReports[p.id]??{binding:'fixture-only',authentication:unverified,models:unverified,text:unverified,stream:unverified,tools:unverified,usage:{requests:0,inputTokens:null,outputTokens:null}};report.authentication={status:'pass',message:'Mock authentication only',at:Date.now()};report[payload.stage]={status:'pass',message:'Fixture '+payload.stage+' passed (mock only).',at:Date.now()};diagnosticReports[p.id]=report;return {report,models:payload.stage==='models'?[model]:undefined};}
+      case 'PROFILE_EXPORT':return {version:1,profiles:state.settings.hub.profiles.map(profile=>{const p={...profile,consent:false};delete p.diagnostics;return p;})};
+      case 'PROFILE_CANCEL':return null;
       case 'KEY_SET': state.keys[payload.provider] = true; return null;
       case 'KEY_REMOVE': state.keys[payload.provider] = false; return null;
       case 'MODELS_LIST': return [model];

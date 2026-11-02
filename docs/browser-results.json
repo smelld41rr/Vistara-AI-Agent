@@ -1,5 +1,5 @@
 {
-  "startedAt": "2026-11-02T12:07:19.999Z",
+  "startedAt": "2026-11-02T14:43:07.641Z",
   "native": {
     "category": "real-extension",
     "status": "BLOCKED",
@@ -30,7 +30,7 @@
       "future milestone screens show honest Not built yet state",
       "Settings renders provider cloud disclosure and terms",
       "BYOK controls save a session key and discover models only on a user gesture",
-      "model selection and per-provider consent save without selecting a model automatically",
+      "model selection and per-profile consent save without selecting a model automatically",
       "theme, compact spacing and font settings apply after saving",
       "streamed mock response renders as escaped text with no HTML execution",
       "context-enabled prompt uses the actual fixture snapshot through the scripted provider",
@@ -42,5 +42,5 @@
     "errors": [],
     "browserVersion": "154.0.8037.57"
   },
-  "finishedAt": "2026-11-02T12:07:33.713Z"
+  "finishedAt": "2026-11-02T14:43:22.382Z"
 }

@@ -113,35 +113,32 @@ try {
   });
   await check('Settings renders provider cloud disclosure and terms', async () => {
     await page.getByRole('navigation').getByRole('button', { name: 'Settings', exact: true }).click();
-    await page.getByText(/external cloud provider/i).first().waitFor();
-    await page.getByRole('link', { name: /Review provider terms/ }).waitFor();
+    await page.getByText(/external cloud processing/i).first().waitFor();
+    await page.getByRole('link', { name: /Official provider documentation/ }).waitFor();
   });
   await check('BYOK controls save a session key and discover models only on a user gesture', async () => {
     await page.getByLabel('Your API key', { exact: true }).fill('fixture-key-not-a-real-secret');
     assert.equal(await page.getByRole('checkbox', { name: 'Remember key on this device' }).isChecked(), false);
-    await page.getByRole('button', { name: 'Save key', exact: true }).click();
-    await page.getByLabel('Replace API key', { exact: true }).waitFor();
-    await page.getByRole('button', { name: 'Test connection', exact: true }).click();
-    await page.getByText('Fixture connection ready (mock only).', { exact: true }).first().waitFor();
+    await page.getByRole('checkbox', { name: /I consent to sending/ }).check();
     await page.getByRole('button', { name: 'Discover models', exact: true }).click();
-    await page.getByText('1 models discovered. Choose one below.', { exact: true }).waitFor();
-    assert.equal(await page.getByLabel('Model', { exact: true }).inputValue(), '');
+    await page.getByText('Fixture models passed (mock only).', { exact: true }).waitFor();
+    assert.equal(await page.getByLabel('Model ID (manual entry supported)', { exact: true }).inputValue(), '');
     const calls = await page.evaluate(() => window.__vistaraMock.requests);
-    const index = calls.findIndex(r => r.type === 'MODELS_LIST');
+    const index = calls.findIndex(r => r.type === 'PROFILE_DIAG');
     assert.equal(calls[index - 1].type, 'PERMISSION_REQUEST');
     assert.deepEqual(calls[index - 1].payload.origins, ['https://generativelanguage.googleapis.com/*']);
-    const saveKey = calls.find(r => r.type === 'KEY_SET');
-    assert.equal(saveKey.payload.persist, false);
+    assert.equal(calls.some(r=>r.type==='PROFILE_SAVE'),false);
   });
-  await check('model selection and per-provider consent save without selecting a model automatically', async () => {
-    await page.getByLabel('Model', { exact: true }).selectOption('fixture-model');
-    await page.getByRole('checkbox', { name: /I understand and consent/ }).check();
-    await page.getByRole('button', { name: 'Save preferences', exact: true }).click();
-    await page.getByText('Preferences saved.', { exact: true }).waitFor();
-    await page.getByRole('group', { name: 'AI provider', exact: true }).getByRole('button', { name: /Groq/ }).click();
-    assert.equal(await page.getByRole('checkbox', { name: /I understand and consent/ }).isChecked(), false);
-    await page.getByRole('group', { name: 'AI provider', exact: true }).getByRole('button', { name: /Google Gemini/ }).click();
-    assert.equal(await page.getByRole('checkbox', { name: /I understand and consent/ }).isChecked(), true);
+  await check('model selection and per-profile consent save without selecting a model automatically', async () => {
+    await page.getByLabel('Discovered models', { exact: true }).selectOption('fixture-model');
+    await page.getByRole('button', { name: 'Save profile', exact: true }).click();
+    await page.getByLabel('Replace API key', { exact: true }).waitFor();
+    const saved=await page.evaluate(()=>window.__vistaraMock.requests.find(r=>r.type==='PROFILE_SAVE'));
+    assert.equal(saved.payload.persist,false);
+    await page.locator('.profile-open').filter({hasText:'Groq'}).click();
+    assert.equal(await page.getByRole('checkbox', { name: /I consent to sending/ }).isChecked(), false);
+    await page.locator('.profile-open').filter({hasText:'Google Gemini'}).click();
+    assert.equal(await page.getByRole('checkbox', { name: /I consent to sending/ }).isChecked(), true);
     await page.screenshot({ path: 'screenshots/settings-fixture.png', fullPage: true });
   });
   await check('theme, compact spacing and font settings apply after saving', async () => {

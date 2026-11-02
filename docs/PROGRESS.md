@@ -1,3 +1,25 @@
+# Current update — M2.1 Provider Hub, 2 November 2026
+
+Existing project upgraded to 0.2.1; M0/M1/M2 preserved. User subsequently authorized sanitized M2.1 GitHub delivery with "push on github". No deployment/store publication. No M3 started.
+
+| Capability | Status | Evidence / remaining boundary |
+|---|---|---|
+| Dynamic same-kind profiles, independent defaults, catalog/custom editor | DONE_VERIFIED | Unit/integration + compiled M2.1 UI/controller fixture |
+| Native Gemini/Anthropic and shared compatible adapters | DONE_VERIFIED | Simulated HTTP unit/integration; all live accounts UNVERIFIED |
+| Additive settings/key/history migration and rollback | DONE_VERIFIED | Legacy mock data + real IndexedDB compiled fixture |
+| Separated text/stream/no-op tool roundtrip diagnostics | DONE_VERIFIED | Actual worker/adapters with simulated provider HTTP; no browser actions in probes |
+| Exact configuration/key-bound Tasks gate, consent/permissions/redirect checks | DONE_VERIFIED | Security regressions and actual custom-provider TaskManager fixture |
+| M0/M1 reader/selection/Chat/history and M2 scoped tools | DONE_VERIFIED | 166 unit/integration; 18 baseline + 15 M2 + 10 M2.1 fixture checks |
+| Key remove/clear data incl draft credential and task memory | DONE_VERIFIED | Unit/integration + compiled UI fixture |
+| Production archives and static source/history/ZIP audit | DONE_VERIFIED | Root manifest, CRC/exclusions, heuristic credential checks and SHA256 in M2.1-TEST-REPORT.md / release verification |
+| Native Chrome installed-extension acceptance | BLOCKED | Managed ExtensionInstallBlocklist=["*"]; checklist UNVERIFIED |
+| Live provider text/stream/tools | DONE_UNVERIFIED | Adapters implemented; no user credentials/live-test approval; all eleven account checks UNVERIFIED |
+| M3+ workflows/planning/schedules | PENDING | Explicitly not started |
+
+Next unfinished gate: authorized native Chrome/live-provider manual acceptance in M2.1-NATIVE-VERIFICATION.md. GitHub delivery is now authorized; deployment/store publication remains prohibited. Historical reports below are preserved; current inventory above supersedes old pending/Gemini-only statements.
+
+---
+
 # Current update — M2, 2 November 2026
 
 User reports real-Chrome M1 sidebar, live Gemini, page/repository summary and exact selection verified. This is USER_REPORTED, separate from environment runs. M2 implemented; fixture/unit/integration verification is recorded in M2-TEST-REPORT.md. Native M2 remains UNVERIFIED/BLOCKED by managed install policy. M3 explicitly NOT STARTED. Public GitHub sanitized M2 upload explicitly authorized (latest user instruction supersedes private request).

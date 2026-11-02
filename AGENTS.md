@@ -77,3 +77,8 @@ No remote code, no eval in extension contexts, a strict content security policy,
 The user has now explicitly reported manual M0/M1 Chrome/Gemini/selection verification and authorized M2 only. Preserve M0/M1; do not begin M3. M2 includes the requested bounded function-calling tool feedback cycle, not a generalized M3 planner. The requested initial stack and M0 permissions are part of the user-authorized build; the STOP-AND-ASK rule applies to additions or changes beyond this baseline. No remote publication. Existing /workspace/Vistara is unrelated and must remain untouched.
 
 Latest explicit user authorization: keep smelld41rr/Vistara-AI-Agent PUBLIC; sanitized M2 source, tests, reports and release ZIP upload authorized after checks. This supersedes the earlier private-only request. No force push or unrelated-file deletion. No deployment or store publication.
+
+## M2.1 superseding execution scope
+The current pasted user request explicitly authorizes a dynamic provider interface, native Gemini/Anthropic plus OpenAI-compatible adapters, profile migration and provider-origin optional access using the existing manifest baseline. It does not authorize M3. Preserve M0–M2. Latest M2.1 instruction: do not push GitHub without new approval; the previous M2 upload authorization does not authorize M2.1. No deployment or store publication. Automated provider requests must remain simulated without user credentials and explicit live-test approval.
+
+Latest user instruction: "push on github" explicitly authorizes sanitized M2.1 source/tests/docs and release ZIP delivery to the existing PUBLIC smelld41rr/Vistara-AI-Agent repository. Preserve remote history/unrelated files and prior releases; no force push, deployment or store publication.
