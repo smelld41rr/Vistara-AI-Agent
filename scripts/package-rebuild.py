@@ -11,6 +11,7 @@ for p in root.rglob('*'):
  if not p.is_file():continue
  rel=p.relative_to(root)
  if any(x in {'.git','node_modules','dist','dist-zip','.output','.wxt','work','release','.cache','coverage','.results','__pycache__'} for x in rel.parts):continue
+ if p.name in {'AGENTS.md','CLAUDE.md'}:continue
  if p.name.startswith('.env') or p.suffix in {'.log','.pyc','.pem','.key'}:continue
  if len(rel.parts)>1 and rel.parts[0] not in top:continue
  if p.is_symlink():raise RuntimeError('Source symlink refused: '+str(rel))
@@ -34,11 +35,13 @@ for p in (root/'src/browser-control').rglob('*'):
   if old.exists() and p.suffix in {'.ts','.tsx','.js'}:
    current=re.sub(r'^/\* Vistara AI modification[^\n]*\*/\n','',p.read_text()).replace('Vistara AI','Nanobrowser')
    if re.sub(r'\s+','',current)!=re.sub(r'\s+','',old.read_text()):engine_differences.append(str(p.relative_to(root)))
-assert not engine_differences,engine_differences
+allowed={'src/browser-control/index.ts','src/browser-control/core/controller.ts','src/browser-control/core/tools/text.ts','src/browser-control/probe/source.ts','src/browser-control/protocol/results.ts'}
+assert set(engine_differences)<=allowed,engine_differences
 assert (root/'LICENSE').read_bytes()==(up/'LICENSE').read_bytes()
 manifest=json.loads((root/'dist/manifest.json').read_text())
-assert manifest['manifest_version']==3 and manifest['version']=='0.3.0' and 'debugger' in manifest['permissions']
+assert manifest['manifest_version']==3 and manifest['version']=='0.3.2' and 'debugger' in manifest['permissions']
 assert manifest['host_permissions']==['<all_urls>']
+assert manifest['options_ui']=={'page':'options.html','open_in_tab':True},manifest.get('options_ui')
 for locale in ['en','zh_CN','zh_TW']:assert json.loads((root/f'dist/_locales/{locale}/messages.json').read_text())['extName']['message']=='Vistara AI'
 for required in ['LICENSE','NOTICE','THIRD_PARTY_NOTICES.md','background.js','sidepanel.html','options.html','welcome.html']:assert (root/'dist'/required).is_file(),required
 # No original-product service destinations in production output. Legal GitHub attribution is permitted.
@@ -48,8 +51,8 @@ for p in (root/'dist').rglob('*'):
   for forbidden in ['https://nanobrowser.ai','nanobrowser_ai','utm_source=nanobrowser','https://docs.google.com/forms/d/e/1FAIpQLSfWb8EUQ3Z0ey7nJ0ekbwuNPtBq_88M_2eZ4IxUQ8JiyyQhXA','imbddededgmcgfhfpcjmijokokekbkal/reviews']:
    assert forbidden not in text,(str(p),forbidden)
 assert not findings,findings
-chrome=release/'Vistara-AI-NanoBrowser-Chrome.zip';source=release/'Vistara-AI-NanoBrowser-Source.zip'
-shutil.copy2(root/'dist-zip/vistara-ai-0.3.0.zip',chrome)
+chrome=release/'Vistara-AI-Ollama-Settings-Chrome.zip';source=release/'Vistara-AI-Ollama-Settings-Source.zip'
+shutil.copy2(root/'dist-zip/vistara-ai-0.3.2.zip',chrome)
 with zipfile.ZipFile(source,'w',zipfile.ZIP_DEFLATED) as z:
  for p,rel in sorted(files,key=lambda f:str(f[1])):z.write(p,str(rel))
 artifacts=[]
@@ -58,7 +61,7 @@ for p in [chrome,source]:
   assert z.testzip() is None
   names=z.namelist();assert all(not n.startswith('/') and '..' not in Path(n).parts for n in names)
   assert not any('node_modules' in Path(n).parts or Path(n).name.startswith('.env') for n in names)
-  if p==chrome:assert 'manifest.json' in names and json.loads(z.read('manifest.json'))['version']=='0.3.0'
+  if p==chrome:assert 'manifest.json' in names and json.loads(z.read('manifest.json'))['version']=='0.3.2'
   else:
    for folder in ['src/agent/','src/browser-control/','src/extension/','src/llm/','src/side-panel/','src/store/','src/options/','src/ui/','entrypoints/','fixtures/']:assert any(n.startswith(folder) for n in names),folder
    for name in ['LICENSE','NOTICE','pnpm-lock.yaml','docs/TEST_REPORT.md','docs/NATIVE_VERIFICATION.md','docs/CHANGED_FILES.md']:assert name in names,name
@@ -66,8 +69,8 @@ for p in [chrome,source]:
    if Path(name).suffix in {'.ts','.tsx','.js','.json','.md','.html','.css','.mjs'}:scan(p.name+':'+name,z.read(name).decode(errors='replace'))
  assert not findings,findings
  artifacts.append({'file':p.name,'bytes':p.stat().st_size,'entries':len(names),'sha256':hashlib.sha256(p.read_bytes()).hexdigest(),'integrity':'PASS'})
-report={'status':'PASS','artifacts':artifacts,'sourceFiles':len(files),'upstream':'19dc8e8a9be6ed06c0ef9ec7de8d84bf6a88c458','browserControlEquivalentAfterBrandNotices':True,'apacheLicenseUnchanged':True,'originalServiceDestinationsAbsentFromBuild':True,'sourceHistoryAndZipSecretPatternFindings':findings,'nativeChrome':'BLOCKED/UNVERIFIED','liveProviders':'UNVERIFIED','limits':'Static scans are heuristic; no native/live success is inferred from source or unit tests.'}
-(release/'REBUILD-VERIFICATION.json').write_text(json.dumps(report,indent=2)+'\n')
-(release/'SHA256SUMS-NanoBrowser-Rebuild.txt').write_text('\n'.join(a['sha256']+'  '+a['file'] for a in artifacts)+'\n')
-for src in ['TEST_REPORT.md','NATIVE_VERIFICATION.md','CHANGED_FILES.md','UPSTREAM_PROVENANCE.md']:shutil.copy2(root/'docs'/src,release/src)
+report={'status':'PASS','artifacts':artifacts,'sourceFiles':len(files),'upstream':'19dc8e8a9be6ed06c0ef9ec7de8d84bf6a88c458','browserControlEquivalentAfterBrandNotices':not engine_differences,'reviewedBrowserControlChanges':engine_differences,'apacheLicenseUnchanged':True,'originalServiceDestinationsAbsentFromBuild':True,'sourceHistoryAndZipSecretPatternFindings':findings,'nativeChrome':'BLOCKED/UNVERIFIED','liveProviders':'UNVERIFIED','limits':'Static scans are heuristic; no native/live success is inferred from source or unit tests.'}
+(release/'OLLAMA-SETTINGS-VERIFICATION.json').write_text(json.dumps(report,indent=2)+'\n')
+(release/'SHA256SUMS-Ollama-Settings.txt').write_text('\n'.join(a['sha256']+'  '+a['file'] for a in artifacts)+'\n')
+for src in ['OLLAMA_SETTINGS_REPORT.md','OLLAMA_SETUP.md','ARGUMENT_FIX_REPORT.md','TEST_REPORT.md','NATIVE_VERIFICATION.md','CHANGED_FILES.md','UPSTREAM_PROVENANCE.md']:shutil.copy2(root/'docs'/src,release/src)
 print(json.dumps(report,indent=2))

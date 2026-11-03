@@ -1,3 +1,15 @@
+# Vistara AI 0.3.2 downloads
+
+- [Chrome extension ZIP](https://github.com/smelld41rr/Vistara-AI-Agent/raw/refs/heads/main/release/Vistara-AI-Ollama-Settings-Chrome.zip)
+- [Editable source ZIP](https://github.com/smelld41rr/Vistara-AI-Agent/raw/refs/heads/main/release/Vistara-AI-Ollama-Settings-Source.zip)
+- [Ollama setup](docs/OLLAMA_SETUP.md) · [Actual checks and limitations](docs/OLLAMA_SETTINGS_REPORT.md)
+
+868 tests passed; 4 live-provider tests skipped. Native Chrome and real local Ollama automation remain unverified. Earlier no-push notes below describe implementation-stage restrictions; the subsequent user instruction authorizes this GitHub delivery.
+
+> Local update 0.3.2: [Ollama setup](docs/OLLAMA_SETUP.md) and [Settings verification](docs/OLLAMA_SETTINGS_REPORT.md). Existing adapters/settings restored and hardened; native Chrome and actual local inference remain unverified here. No push/deployment in this task.
+
+> Local update 0.3.1: targeted browser argument fix. See [verification report](docs/ARGUMENT_FIX_REPORT.md). Native GUVI verification remains blocked; no GitHub push in this task.
+
 # Vistara AI
 
 A source-based rebrand of NanoBrowser at commit `19dc8e8a9be6ed06c0ef9ec7de8d84bf6a88c458`, licensed under Apache-2.0. This rebuild uses the actual upstream application and browser-control engine, not the old Vistara M2.1 engine. No GitHub fork was created. The existing Vistara repository/history and an M2.1 backup branch are retained.

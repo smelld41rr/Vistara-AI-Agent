@@ -1,3 +1,4 @@
+import { ollamaProblem } from './ollama-test';
 // Settings → Providers: the default model and its reasoning effort, then voice input, whose voice model comes from an
 // OpenAI or Gemini provider, then the list of providers with their keys, base URLs and models. Test models calls
 // src/llm from this page; settings are written through chrome.storage, with no worker command.
@@ -7,6 +8,7 @@ import { listModels } from '@src/llm';
 import type { ConnectionResult, ModelList, ProviderKind } from '@src/llm';
 import type { ReasoningEffort } from '@src/llm/catalogue';
 import {
+  agentModelAvailable,
   capabilityOf,
   DEFAULT_SETTINGS,
   keysStorage,
@@ -32,7 +34,7 @@ export const KINDS: Array<{ kind: ProviderKind; label: string; needsKey: boolean
   { kind: 'openai', label: 'OpenAI', needsKey: true },
   { kind: 'gemini', label: 'Google Gemini', needsKey: true },
   { kind: 'openrouter', label: 'OpenRouter', needsKey: true },
-  { kind: 'ollama', label: 'Ollama', needsKey: false, baseUrl: 'http://localhost:11434' },
+  { kind: 'ollama', label: 'Ollama (Local)', needsKey: false, baseUrl: 'http://localhost:11434' },
   { kind: 'lmstudio', label: 'LM Studio', needsKey: false, baseUrl: 'http://localhost:1234' },
   { kind: 'openai-compatible', label: 'OpenAI-compatible', needsKey: false, baseUrl: '' },
 ];
@@ -97,7 +99,7 @@ export function ProvidersSection() {
 
   const choices = providers.flatMap(p =>
     p.models
-      .filter(m => !m.noToolCalling)
+      .filter(m => agentModelAvailable(p, m))
       .map(m => ({ value: `${p.id}\u0000${m.name}`, label: `${p.name} · ${m.name}` })),
   );
   const current = settings.defaultModel
@@ -308,6 +310,7 @@ function ProviderItem({ provider }: { provider: ProviderConfig }) {
   const [newModel, setNewModel] = useState('');
   const [listed, setListed] = useState<ModelList>({ models: [], hidden: [] });
   const [showAll, setShowAll] = useState(false);
+  const [hasListed, setHasListed] = useState(false);
   const [listing, setListing] = useState(false);
   const [listError, setListError] = useState<{ message: string; originRefused: boolean } | null>(null);
   // Counts the lists asked for, so only the latest one's answer is shown.
@@ -318,6 +321,14 @@ function ProviderItem({ provider }: { provider: ProviderConfig }) {
   const testing = testingModels.size > 0;
   const key = keys[provider.id] ?? '';
   const name = provider.name.trim();
+  useEffect(() => {
+    listAsked.current++;
+    setListed({ models: [], hidden: [] });
+    setListing(false);
+    setListError(null);
+    setResults({});
+    setHasListed(false);
+  }, [provider.baseUrl]);
 
   /** Lists the models with `apiKey`, the key just saved when called on saving it. */
   const fetchModels = async (apiKey = key) => {
@@ -328,11 +339,16 @@ function ProviderItem({ provider }: { provider: ProviderConfig }) {
       const list = await listModels({ kind: provider.kind, apiKey, baseUrl: provider.baseUrl });
       if (asked !== listAsked.current) return;
       setListed(list);
+      setHasListed(true);
       setShowAll(!list.models.length);
     } catch (error) {
       if (asked !== listAsked.current) return;
       setListed({ models: [], hidden: [] });
-      setListError(listProblem(error, local));
+      setListError(
+        provider.kind === 'ollama'
+          ? { message: ollamaProblem(error), originRefused: !!(error as { originRefused?: boolean }).originRefused }
+          : listProblem(error, local),
+      );
     } finally {
       if (asked === listAsked.current) setListing(false);
     }
@@ -361,25 +377,36 @@ function ProviderItem({ provider }: { provider: ProviderConfig }) {
 
   const enqueue = (modelName: string, mode: 'whole' | 'add', queuedAt: string) => {
     setTestingModels(prev => new Set(prev).add(modelName));
-    queue.current = queue.current.then(async () => {
-      const fresh = (await providersStorage.get()).find(p => p.id === provider.id);
-      const usedKey = (await keysStorage.get())[provider.id] ?? '';
-      if (
-        fresh?.models.some(m => m.name === modelName) &&
-        (fresh.baseUrl ?? '') === queuedAt &&
-        !(needsKey(fresh) && !usedKey)
-      ) {
-        const test = await testModel(fresh, modelName, usedKey, mode === 'whole' || wholeTestOnAdd(fresh));
-        const r = test.result;
-        if (r) setResults(prev => ({ ...prev, [modelName]: r }));
-        await saveTest(fresh.id, fresh.baseUrl, modelName, test);
-      }
-      setTestingModels(prev => {
-        const next = new Set(prev);
-        next.delete(modelName);
-        return next;
+    queue.current = queue.current
+      .catch(() => {})
+      .then(async () => {
+        try {
+          const fresh = (await providersStorage.get()).find(p => p.id === provider.id);
+          const usedKey = (await keysStorage.get())[provider.id] ?? '';
+          if (
+            fresh?.models.some(m => m.name === modelName) &&
+            (fresh.baseUrl ?? '') === queuedAt &&
+            !(needsKey(fresh) && !usedKey)
+          ) {
+            const test = await testModel(fresh, modelName, usedKey, mode === 'whole' || wholeTestOnAdd(fresh));
+            const r = test.result;
+            if (r && (await providersStorage.get()).some(p => p.id === fresh.id && (p.baseUrl ?? '') === queuedAt))
+              setResults(prev => ({ ...prev, [modelName]: r }));
+            await saveTest(fresh.id, fresh.baseUrl, modelName, test);
+          }
+        } catch {
+          setResults(prev => ({
+            ...prev,
+            [modelName]: { ok: false, toolCalling: false, error: t('models.ollama.failed'), ms: 0 },
+          }));
+        } finally {
+          setTestingModels(prev => {
+            const next = new Set(prev);
+            next.delete(modelName);
+            return next;
+          });
+        }
       });
-    });
   };
 
   const testAll = () => {
@@ -489,6 +516,8 @@ function ProviderItem({ provider }: { provider: ProviderConfig }) {
                 <ModelChip
                   key={m.name}
                   model={m}
+                  localOllama={provider.kind === 'ollama'}
+                  onTest={() => runTests([m.name], 'whole')}
                   result={results[m.name]}
                   testing={testingModels.has(m.name)}
                   onRemove={() =>
@@ -510,6 +539,21 @@ function ProviderItem({ provider }: { provider: ProviderConfig }) {
                 if (e.key === 'Enter') void addModel(newModel);
               }}
             />
+            {provider.kind === 'ollama' && hasListed ? (
+              <div
+                className="flex max-h-48 w-full flex-wrap gap-2 overflow-y-auto"
+                aria-label={t('models.ollama.installed')}>
+                {[...listed.models, ...listed.hidden].map(model => (
+                  <button
+                    type="button"
+                    key={model}
+                    className="rounded border border-nb-border px-2 py-1 font-mono text-xs hover:bg-nb-surface"
+                    onClick={() => setNewModel(model)}>
+                    {model}
+                  </button>
+                ))}
+              </div>
+            ) : null}
             <datalist id={`models-${provider.id}`}>
               {(showAll ? [...listed.models, ...listed.hidden] : listed.models).map(n => (
                 <option key={n} value={n} />
@@ -519,6 +563,12 @@ function ProviderItem({ provider }: { provider: ProviderConfig }) {
             <Button variant="ghost" onClick={() => void fetchModels()}>
               {t('models.fetchModels')}
             </Button>
+            {provider.kind === 'ollama' &&
+            !listing &&
+            !listError &&
+            listed.models.length + listed.hidden.length === 0 ? (
+              <span className="text-nb-muted">{t(hasListed ? 'models.ollama.empty' : 'models.ollama.listHint')}</span>
+            ) : null}
             {listing ? (
               <span className="text-nb-muted">{t('models.listing')}</span>
             ) : (
@@ -531,6 +581,26 @@ function ProviderItem({ provider }: { provider: ProviderConfig }) {
           ) : null}
         </Line>
       </div>
+      {provider.kind === 'ollama' ? (
+        <div className="space-y-2 text-sm">
+          <label className="flex flex-wrap items-center gap-2">
+            {t('models.ollama.timeout')}
+            <Input
+              type="number"
+              min={5}
+              max={600}
+              className="w-24"
+              value={(provider.requestTimeoutMs ?? 120000) / 1000}
+              onChange={e => {
+                const seconds = Number(e.target.value);
+                if (Number.isFinite(seconds) && seconds >= 5 && seconds <= 600)
+                  void updateProvider(provider.id, { requestTimeoutMs: Math.round(seconds * 1000) });
+              }}
+            />
+          </label>
+          <p className="text-nb-muted">{t('models.ollama.localHint')}</p>
+        </div>
+      ) : null}
       {listError ? (
         listError.originRefused ? (
           <OriginFix kind={provider.kind} />
@@ -741,12 +811,16 @@ function ModelChip({
   result,
   testing,
   onRemove,
+  onTest,
+  localOllama,
 }: {
   model: ModelEntry;
   result?: ConnectionResult;
   /** A test of this model is running or waiting its turn. */
   testing: boolean;
   onRemove: () => void;
+  onTest: () => void;
+  localOllama: boolean;
 }) {
   const passed = result?.ok && result.toolCalling;
   return (
@@ -760,6 +834,14 @@ function ModelChip({
       className={`group flex items-center gap-1.5 rounded-lg border py-1 pl-2.5 pr-1 ${model.noToolCalling ? 'border-red-300 dark:border-red-800' : 'border-nb-border'} bg-nb-surface`}>
       {passed ? <CheckIcon size={14} className="text-emerald-600 dark:text-emerald-400" /> : null}
       <span className="font-mono">{model.name}</span>
+      {localOllama ? (
+        <span className="text-nb-muted">
+          · {t(model.agentTest?.passed ? 'models.ollama.ready' : 'models.ollama.notReady')}
+        </span>
+      ) : null}
+      <button type="button" className="text-nb-link underline" disabled={testing} onClick={onTest}>
+        {t('models.ollama.testOne')}
+      </button>
       {testing ? <span className="text-nb-muted">· {t('models.testing')}</span> : null}
       {!testing && model.noToolCalling ? (
         <span className="text-red-700 dark:text-red-300">· {t('models.noToolCalling')}</span>
@@ -819,7 +901,10 @@ export function OriginFix({ kind }: { kind: ProviderKind }) {
   return (
     <Notice tone="warn">
       <p className="mb-1">{t('models.fix.ollama')}</p>
-      <code className="block whitespace-pre-wrap font-mono">{t(key)}</code>
+      <code className="block whitespace-pre-wrap font-mono">
+        {t(key).replaceAll('chrome-extension://*', chrome.runtime.getURL('/').replace(/\/$/, ''))}
+      </code>
+      <p className="mt-2">{t('models.ollama.originHint')}</p>
     </Notice>
   );
 }

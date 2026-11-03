@@ -80,6 +80,7 @@ export interface ProfileOverrides {
 
 export interface ModelEntry {
   name: string;
+  agentTest?: { passed: boolean; at: string };
   overrides?: ProfileOverrides;
   /** Detected from a local server; only ever lowers the window. */
   detectedContext?: number;
@@ -112,12 +113,18 @@ export interface ProviderConfig {
   name: string;
   baseUrl?: string;
   models: ModelEntry[];
+  requestTimeoutMs?: number;
 }
 
 export const providersStorage = createStorage<ProviderConfig[]>('nb.providers', [], { liveUpdate: true });
 
 /** API keys by provider id. Never exported, never logged, never sent anywhere but to their provider. */
 export const keysStorage = createStorage<Record<string, string>>('nb.keys', {}, { liveUpdate: true });
+
+/** Ollama must pass live structured-tool diagnostics on this configured server before Agent selection. */
+export function agentModelAvailable(provider: ProviderConfig, model: ModelEntry): boolean {
+  return !model.noToolCalling && (provider.kind !== 'ollama' || model.agentTest?.passed === true);
+}
 
 export const LOCAL_KINDS: ReadonlySet<ProviderKind> = new Set(['ollama', 'lmstudio']);
 
@@ -198,10 +205,15 @@ export function usableModel(
 ): ModelRef | null {
   for (const ref of wanted) {
     const found = findModel(providers, ref);
-    if (found && !found.model.noToolCalling) return { providerId: found.provider.id, model: found.model.name };
+    if (found?.provider.kind === 'ollama' && !agentModelAvailable(found.provider, found.model)) {
+      const tested = found.provider.models.find(m => agentModelAvailable(found.provider, m));
+      return tested ? { providerId: found.provider.id, model: tested.name } : null;
+    }
+    if (found && agentModelAvailable(found.provider, found.model))
+      return { providerId: found.provider.id, model: found.model.name };
   }
   for (const p of providers) {
-    const m = p.models.find(x => !x.noToolCalling);
+    const m = p.models.find(x => agentModelAvailable(p, x));
     if (m) return { providerId: p.id, model: m.name };
   }
   return null;

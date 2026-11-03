@@ -7,6 +7,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 export interface ProbeState {
+  /** Framework identification only; never a framework API, hidden-input redirect or selector target. */
+  editor?: 'monaco' | 'codemirror' | 'ace';
   connected: boolean;
   tag: string;
   type: string;
@@ -184,6 +186,7 @@ export interface ProbeApi {
   labelPoint(input: Element): { fx: number; fy: number } | null;
   pageFacts(): PageFacts;
   contextOf(container: Element, target: Element): { inside: boolean; text: string; shown: string };
+  selectionMatchesContents(el: Element): boolean;
   setNativeValue(el: Element, value: string): string;
   fileInputFacts(el: Element): FileInputFacts;
   fileChunk(el: Element, key: string, chunk: string): number;
@@ -430,10 +433,26 @@ export function probeMain(): void {
           !['checkbox', 'radio', 'button', 'submit', 'reset', 'image', 'file', 'hidden', 'range', 'color'].includes(
             type,
           ));
+      let editor: 'monaco' | 'codemirror' | 'ace' | undefined;
+      for (let node: Node | null = el; node; node = composedParent(node)) {
+        if (!(node instanceof Element)) continue;
+        if (node.classList.contains('monaco-editor')) {
+          editor = 'monaco';
+          break;
+        }
+        if (node.classList.contains('CodeMirror') || node.classList.contains('cm-editor')) {
+          editor = 'codemirror';
+          break;
+        }
+        if (node.classList.contains('ace_editor')) {
+          editor = 'ace';
+          break;
+        }
+      }
       const contentEditable = (el as HTMLElement).isContentEditable === true;
       const enabled = !disabledByAncestor(el);
-      const readOnly = textInput && (input.readOnly || el.getAttribute('aria-readonly') === 'true');
-      const editable = enabled && ((textInput && !readOnly) || contentEditable);
+      const readOnly = (textInput && input.readOnly) || el.getAttribute('aria-readonly') === 'true';
+      const editable = enabled && !readOnly && (textInput || contentEditable);
       let checked: boolean | 'mixed' | null = null;
       if (tag === 'input' && (type === 'checkbox' || type === 'radio'))
         checked = input.indeterminate ? 'mixed' : input.checked;
@@ -450,6 +469,7 @@ export function probeMain(): void {
           ? (el as any).checkVisibility({ visibilityProperty: true, checkVisibilityCSS: true })
           : true;
       return {
+        ...(editor ? { editor } : {}),
         connected: el.isConnected,
         tag,
         type,
@@ -827,6 +847,26 @@ export function probeMain(): void {
       selection.removeAllRanges();
       selection.addRange(range);
       return true;
+    },
+
+    /** Read-only proof after the framework handled trusted Select All; never reads a framework's private API. */
+    selectionMatchesContents(el: Element) {
+      if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+        const input = el as HTMLInputElement;
+        return input.selectionStart === 0 && input.selectionEnd === input.value.length;
+      }
+      const selection = (el.getRootNode() as Document).getSelection?.() ?? document.getSelection();
+      if (
+        !selection ||
+        !selection.anchorNode ||
+        !selection.focusNode ||
+        !el.contains(selection.anchorNode) ||
+        !el.contains(selection.focusNode)
+      )
+        return false;
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      return selection.toString() === range.toString();
     },
 
     /** Date, time, colour and range inputs: the native prototype value setter, then input and change. */

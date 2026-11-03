@@ -50,3 +50,5 @@ import './scenarios';
 import './probe';
 import './record-layout';
 import './real-site-labels';
+
+import './argument-controls';

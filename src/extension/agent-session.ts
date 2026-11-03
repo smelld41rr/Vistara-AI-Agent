@@ -44,7 +44,7 @@ function dialogOpen(session: Session, tabId: number): boolean {
 export function layerPort(session: Session, border?: Pick<PageBorder, 'around'>): LayerPort {
   return {
     call: (tool, args, signal) => {
-      const run = () => session.call(tool, args, { signal });
+      const run = () => session.call(tool, args, { signal, normalizeRefTargets: true });
       if (tool !== 'screenshot' || !border) return run();
       const tabId = screenshotTab(session, args);
       if (tabId === null || dialogOpen(session, tabId)) return run();

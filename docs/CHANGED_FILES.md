@@ -1,3 +1,11 @@
+# Current 0.3.2 Ollama and Settings update
+
+See [OLLAMA_SETTINGS_REPORT.md](OLLAMA_SETTINGS_REPORT.md) for this task’s changes, actual checks and limitations. Historical evidence below is preserved.
+
+# 0.3.1 targeted argument fix
+
+See [ARGUMENT_FIX_REPORT.md](ARGUMENT_FIX_REPORT.md#files-and-delivery) for the current file inventory and safety changes. Existing engine now includes reviewed argument-validation and text-selection changes; byte identity to upstream is not claimed.
+
 # Changed-file summary
 
 Baseline: NanoBrowser 19dc8e8a9be6ed06c0ef9ec7de8d84bf6a88c458. This is the prominent change inventory referred to by NOTICE. Modified source files carry Vistara notices. JSON/assets are identified here because their formats do not support ordinary comment headers.

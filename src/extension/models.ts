@@ -2,6 +2,7 @@
 // keys. The key leaves storage only to build the provider client.
 import { createModel, detectContext, makePair, resolveProfile } from '@src/llm';
 import {
+  agentModelAvailable,
   capabilityOf,
   findModel,
   getLive,
@@ -41,7 +42,7 @@ export async function resolveModel(pair: LivePair | null): Promise<ResolvedModel
   const providers = await providersStorage.get();
   const found = findModel(providers, ref);
   if (!found) throw new ModelUnavailable(`The model ${ref.model} is no longer configured. Choose another one.`);
-  if (found.model.noToolCalling) {
+  if (!agentModelAvailable(found.provider, found.model)) {
     throw new ModelUnavailable(`${ref.model} did not pass the tool-calling test and cannot run the agent.`);
   }
   const keys = await keysStorage.get();
@@ -81,6 +82,7 @@ export async function resolveModel(pair: LivePair | null): Promise<ResolvedModel
     apiKey: keys[found.provider.id],
     baseUrl: found.provider.baseUrl,
     maxOutputTokens: profile.maxOutput,
+    requestTimeoutMs: found.provider.requestTimeoutMs,
     // Ollama and LM Studio take one request at a time by default; more wait in the extension, not on the server.
     ...(LOCAL_KINDS.has(found.provider.kind) ? { maxConcurrent: 1 } : {}),
   });

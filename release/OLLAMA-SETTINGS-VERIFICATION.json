@@ -1,0 +1,35 @@
+{
+  "status": "PASS",
+  "artifacts": [
+    {
+      "file": "Vistara-AI-Ollama-Settings-Chrome.zip",
+      "bytes": 1281610,
+      "entries": 45,
+      "sha256": "2ad585bb1aa04535d9e58da42fe848e12e16b587693a44803afb7200fb26337f",
+      "integrity": "PASS"
+    },
+    {
+      "file": "Vistara-AI-Ollama-Settings-Source.zip",
+      "bytes": 1229475,
+      "entries": 518,
+      "sha256": "0dc08774640484591d57809823222aacc7a35b9dadf80792d24906c93c3a33ab",
+      "integrity": "PASS"
+    }
+  ],
+  "sourceFiles": 518,
+  "upstream": "19dc8e8a9be6ed06c0ef9ec7de8d84bf6a88c458",
+  "browserControlEquivalentAfterBrandNotices": false,
+  "reviewedBrowserControlChanges": [
+    "src/browser-control/index.ts",
+    "src/browser-control/core/controller.ts",
+    "src/browser-control/probe/source.ts",
+    "src/browser-control/protocol/results.ts",
+    "src/browser-control/core/tools/text.ts"
+  ],
+  "apacheLicenseUnchanged": true,
+  "originalServiceDestinationsAbsentFromBuild": true,
+  "sourceHistoryAndZipSecretPatternFindings": [],
+  "nativeChrome": "BLOCKED/UNVERIFIED",
+  "liveProviders": "UNVERIFIED",
+  "limits": "Static scans are heuristic; no native/live success is inferred from source or unit tests."
+}

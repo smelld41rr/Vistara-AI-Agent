@@ -157,7 +157,15 @@ describe('a model that is no longer configured', () => {
 
   it('skips a model that failed the tool test', () => {
     const providers: ProviderConfig[] = [
-      { id: 'p', kind: 'ollama', name: 'P', models: [{ name: 'bad', noToolCalling: true }, { name: 'good' }] },
+      {
+        id: 'p',
+        kind: 'ollama',
+        name: 'P',
+        models: [
+          { name: 'bad', noToolCalling: true },
+          { name: 'good', agentTest: { passed: true, at: 'fixture' } },
+        ],
+      },
     ];
     expect(usableModel(providers, { providerId: 'p', model: 'bad' })).toEqual({ providerId: 'p', model: 'good' });
     expect(usableModel([])).toBeNull();

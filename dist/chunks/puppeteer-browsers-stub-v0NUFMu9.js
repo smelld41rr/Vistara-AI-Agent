@@ -1,0 +1,1 @@
+var e=()=>{throw Error(`@puppeteer/browsers is not available in the extension`)},t={},n={},r=e,i=e;export{t as Browser,n as ChromeReleaseChannel,r as detectBrowserPlatform,i as resolveDefaultUserDataDir};

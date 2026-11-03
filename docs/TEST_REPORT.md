@@ -1,3 +1,11 @@
+# Current 0.3.2 Ollama and Settings update
+
+See [OLLAMA_SETTINGS_REPORT.md](OLLAMA_SETTINGS_REPORT.md) for this task’s changes, actual checks and limitations. Historical evidence below is preserved.
+
+# Current 0.3.1 argument fix
+
+See [ARGUMENT_FIX_REPORT.md](ARGUMENT_FIX_REPORT.md) for current checks and native/GUVI limitations. Historical 0.3.0 evidence below remains unchanged.
+
 # Vistara AI NanoBrowser-source rebuild — actual test report
 
 2 November 2026. Rebuild 0.3.0, pinned NanoBrowser source 19dc8e8a9be6ed06c0ef9ec7de8d84bf6a88c458. At validation time no fork, push, publication or deployment was performed. GitHub delivery/replacement was subsequently authorized; test results below are unchanged.

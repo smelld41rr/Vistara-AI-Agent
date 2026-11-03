@@ -1,3 +1,4 @@
+import { argumentShapes } from '@src/browser-control';
 // Guards against loops. A nudge is a note on the tool result that caused it; a stop ends the run with one salvage call.
 // Counters belong to the run and are not reset by navigation.
 import type { Result } from '@src/browser-control';
@@ -50,11 +51,39 @@ export class Guards {
   }
 
   /** Records one call's outcome and says whether to nudge or stop. */
-  record(tool: string, args: Record<string, unknown>, result: Result | undefined, isError: boolean): GuardVerdict {
+  record(
+    tool: string,
+    args: Record<string, unknown>,
+    result: Result | undefined,
+    isError: boolean,
+    invalidSdk = false,
+  ): GuardVerdict {
     const s = this.state;
-    const sig = signature(tool, args, result, isError);
+    const invalid =
+      (result?.error?.code === 'INVALID_ARGUMENT' && result.error.delivered === false) ||
+      !!(
+        result?.argumentDiagnostic &&
+        result.error?.delivered === false &&
+        !result.argumentDiagnostic.handlerAttempted
+      ) ||
+      invalidSdk;
+    const sig = invalid
+      ? `invalid ${tool} ${JSON.stringify(argumentShapes(args))}`
+      : signature(tool, args, result, isError);
     s.recent = [...s.recent, sig].slice(-REPEAT_WINDOW);
     s.errorsInRow = isError ? s.errorsInRow + 1 : 0;
+    if (invalid) {
+      const count = s.recent.filter(r => r === sig).length;
+      if (count >= 2)
+        return {
+          stop: `Repeated invalid arguments for ${tool}; no dispatch. Correct the target object using fresh snapshot/find refs before a new attempt.`,
+          guard: 'errors',
+        };
+      return {
+        nudge:
+          'Argument validation failed before dispatch. Use a target OBJECT {ref:...} or {role:...,name:...}; refresh snapshot/find for stale or unknown refs. Do not repeat the same invalid shape.',
+      };
+    }
     if (s.errorsInRow >= ERROR_STOP) return { stop: `${ERROR_STOP} calls in a row failed.`, guard: 'errors' };
 
     const key = NO_EFFECT_TOOLS.has(tool) ? targetKey(args) : null;

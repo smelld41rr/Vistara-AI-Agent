@@ -1,7 +1,16 @@
+import { openSettings } from '@src/ui/options';
 // The side panel. A view: it draws the worker's events and sends commands; it holds no state a run depends on, and it
 // never reads the conversation stores.
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState, useSyncExternalStore } from 'react';
-import { capabilityOf, DEFAULT_SETTINGS, keysStorage, providersStorage, settingsStorage } from '@src/store/settings';
+import {
+  agentModelAvailable,
+  capabilityOf,
+  DEFAULT_SETTINGS,
+  keysStorage,
+  providersStorage,
+  settingsStorage,
+  usableModel,
+} from '@src/store/settings';
 import type { ProviderConfig } from '@src/store/settings';
 import type { LivePair, ModelRef, PermissionMode } from '@src/store/types';
 import { makePair } from '@src/llm/profiles';
@@ -10,7 +19,7 @@ import { useStorage } from '@src/ui/hooks';
 import { setLanguage, t, useLanguage } from '@src/ui/i18n';
 import { applyTheme } from '@src/ui/theme';
 import { PanelClient, panelTabId } from './client';
-import { Composer, pickModel, sameModel } from './Composer';
+import { Composer, sameModel } from './Composer';
 import type { LauncherItem, ModelChoice, PendingFile } from './Composer';
 import { attachmentKind, MAX_FILE, MAX_FILES } from '@src/store/attachments';
 import { voiceLanguage, voiceSetup } from '@src/ui/voice';
@@ -189,7 +198,7 @@ export function App() {
     () =>
       providers.flatMap(p =>
         p.models
-          .filter(m => !m.noToolCalling)
+          .filter(m => agentModelAvailable(p, m))
           .map(m => {
             const ref = { providerId: p.id, model: m.name };
             return { ref, label: `${m.name} · ${p.name}`, name: m.name, capability: capabilityOf(providers, ref) };
@@ -202,7 +211,7 @@ export function App() {
   const mode: PermissionMode = conversation?.mode ?? draftMode ?? settings.defaultMode;
   // The conversation's live pair, the draft of a new chat, or one made from the settings. A model that is no longer
   // configured falls back to the default model, then to the first one there is.
-  const fallback = pickModel(models, settings.defaultModel);
+  const fallback = usableModel(providers, settings.defaultModel);
   const made = fallback ? makePair(fallback, settings.reasoning, capabilityOf(providers, fallback)) : null;
   const pair = state.live ?? (!state.conversationId ? draftPair : null) ?? made;
   // A new chat makes its pair once, when the settings and providers are read, and holds it as its draft until the first
@@ -212,7 +221,7 @@ export function App() {
     if (state.conversationId) setDraftPair(null);
     else if (!draftPair && made && settingsRead && providersRead) setDraftPair(made);
   }, [state.conversationId, draftPair, made, settingsRead, providersRead]);
-  const model = pickModel(models, pair?.model, settings.defaultModel);
+  const model = usableModel(providers, pair?.model, settings.defaultModel);
   const reasoning: ReasoningEffort = pair?.reasoning ?? 'none';
   /** A model or effort chosen in the picker: the conversation's, or the draft's; the latest is the default too. */
   const choose = (next: LivePair) => {
@@ -386,7 +395,7 @@ export function App() {
           onClick={() => setHistoryOpen(true)}>
           <HistoryIcon />
         </IconButton>
-        <IconButton label={t('panel.settings')} onClick={() => void chrome.runtime.openOptionsPage()}>
+        <IconButton label={t('panel.settings')} onClick={() => void openSettings()}>
           <SettingsIcon />
         </IconButton>
       </header>
@@ -528,7 +537,7 @@ export function App() {
                 title={t('composer.needModelTitle')}
                 action={{
                   label: t('composer.setUpModel'),
-                  run: () => void chrome.tabs.create({ url: chrome.runtime.getURL('/options.html#providers') }),
+                  run: () => void openSettings('providers'),
                 }}>
                 {t('composer.needModel')}
               </NoticeCard>
@@ -573,7 +582,7 @@ export function App() {
         quotes={quotes}
         onRemoveQuote={index => setQuotes(current => current.filter((_, i) => i !== index))}
         transcribe={transcribe}
-        onOpenSettings={section => void chrome.tabs.create({ url: chrome.runtime.getURL(`/options.html#${section}`) })}
+        onOpenSettings={section => void openSettings(section)}
         onAttach={list => void attach(list)}
         onScreenshot={() =>
           client?.send({ type: 'screenshot-tab', tabId: client.tabId, conversationId: state.conversationId })

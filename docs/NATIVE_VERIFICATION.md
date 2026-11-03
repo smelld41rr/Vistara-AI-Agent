@@ -1,3 +1,11 @@
+# Current 0.3.2 Ollama and Settings update
+
+See [OLLAMA_SETTINGS_REPORT.md](OLLAMA_SETTINGS_REPORT.md) for this task’s changes, actual checks and limitations. Historical evidence below is preserved.
+
+# Current 0.3.1 argument fix
+
+See [ARGUMENT_FIX_REPORT.md](ARGUMENT_FIX_REPORT.md) for current checks and native/GUVI limitations. Historical 0.3.0 evidence below remains unchanged.
+
 # Native Chrome / live acceptance
 
 Status: BLOCKED / UNVERIFIED. The unmodified supported autorun launch attempted `appearance,providers-test,panel-run` with installed Chromium 154.0.8037.57. It aborted with SIGABRT before any reports: the installed SUID sandbox helper is not configured with its required ownership/mode. Managed policy also sets ExtensionInstallBlocklist=["*"]. Neither the sandbox/helper nor extension policy was changed/bypassed for native verification. No native check passed.

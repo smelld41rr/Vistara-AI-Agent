@@ -69,11 +69,14 @@ function receiptOf(
  * The read-back of a text value: equal is met; a difference is reported, not a failure. A field that cannot
  * be read (the submission navigated, or the field is gone) is not_checked: nothing was read, so nothing differs.
  */
-function readBack(wanted: string, got: string | null, masked: boolean): ActionReceipt['postcondition'] {
+export function readBack(wanted: string, got: string | null, masked: boolean): ActionReceipt['postcondition'] {
   if (got === null) return { status: 'not_checked', detail: 'the value could not be read back' };
   if (masked) return { status: got === wanted ? 'met' : 'unmet', detail: 'value is masked' };
-  if (got === wanted) return { status: 'met', detail: `read back ${quote(got)}` };
-  return { status: 'unmet', detail: `read back ${quote(got ?? '')}, requested ${quote(wanted)}` };
+  if (got === wanted) return { status: 'met', detail: 'Exact text read-back matched the supplied value.' };
+  return {
+    status: 'unmet',
+    detail: 'Read-back differs from the supplied value; inspect before retrying. Text values are not logged.',
+  };
 }
 
 /** Focuses a field with a trusted click; the key guard is armed after it. */
@@ -292,7 +295,19 @@ async function setText(
       () => KeyGuard.arm(ctx, guardedOf(target), options),
       null,
       async keys => {
-        await probe.call(target.frame, target.objectId, 'selectContents');
+        let selected: boolean;
+        if (before.editor) {
+          // Frameworks may maintain their own selection. Let trusted keyboard events update it, then prove it.
+          const dialog = await keys.press('ControlOrMeta+A');
+          if (dialog) interrupted(ctx, dialog, 'selection was attempted; no text was inserted.');
+          selected = await probe.call<boolean>(target.frame, target.objectId, 'selectionMatchesContents');
+        } else selected = await probe.call<boolean>(target.frame, target.objectId, 'selectContents');
+        if (!selected)
+          throw new LayerError(
+            'NOT_EDITABLE',
+            'Selection could not be established. No text was inserted; inspect focus/editor before retrying.',
+            { delivered: true },
+          );
         ctx.tab().actionSeq++;
         const dialog = await keys.unit(async () => {
           if (value === '') {
@@ -646,6 +661,11 @@ export async function set(ctx: ToolContext, args: SetArgs): Promise<ToolOutcome>
   assertNoModal(ctx);
   return withTarget(ctx, args.target, async target => {
     const state = await stateOf(ctx, target);
+    if (state.editor && !state.editable)
+      throw new LayerError(
+        'NOT_EDITABLE',
+        `${state.editor} target is not an editable surface. Use a freshly observed visible textbox/contenteditable in its frame. Hidden framework inputs are not substituted or clicked.`,
+      );
     const role = target.record.print.role;
     const toggle =
       TOGGLE_ROLES.has(role) || state.type === 'checkbox' || state.type === 'radio' || state.checked !== null;

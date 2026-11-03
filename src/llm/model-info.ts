@@ -89,7 +89,7 @@ export async function readModelInfo(
 ): Promise<ApiFacts | null> {
   const get = async (url: string, init?: RequestInit): Promise<Json | null> => {
     try {
-      const response = await fetchFn(url, init);
+      const response = await fetchFn(url, { ...init, signal: AbortSignal.timeout(15_000) });
       return response.ok ? ((await response.json()) as Json) : null;
     } catch {
       return null;

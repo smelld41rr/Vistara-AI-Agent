@@ -52,7 +52,7 @@
   "models.testNoTools": "Connected, but the model did not call the test tool. It is marked \"no tool calling\" and cannot run the agent.",
   "models.fix.lmstudio": "LM Studio refused the request. Turn on \"Enable CORS\" in LM Studio's Developer settings, then try again.",
   "models.fix.generic": "The server refused the request or could not be reached. Check the address, and allow requests from browser extensions (CORS) on the server.",
-  "models.fix.ollama": "Ollama refused the request from the extension. Allow extension origins and restart Ollama:",
+  "models.fix.ollama": "The local server is unreachable or refused the extension origin. First verify Ollama is installed and running at the configured URL. If Ollama logs confirm origin rejection, allow this exact extension origin and restart:",
   "models.fix.ollama.mac": "launchctl setenv OLLAMA_ORIGINS \"chrome-extension://*\"\n(then quit and reopen Ollama)",
   "models.fix.ollama.windows": "Settings → System → About → Advanced system settings → Environment Variables:\nOLLAMA_ORIGINS = chrome-extension://*\n(then quit and reopen Ollama)",
   "models.fix.ollama.linux": "sudo systemctl edit ollama.service\n[Service]\nEnvironment=\"OLLAMA_ORIGINS=chrome-extension://*\"\nsudo systemctl restart ollama",
@@ -464,5 +464,15 @@
   "notice.reasoningDropped": "This model did not take the reasoning setting; continuing without it.",
   "notice.imagesDropped": "This model did not take images; continuing without them.",
   "notice.stopped": "Stopped · What should Vistara AI do instead?",
-  "privacy.disabled": "Usage analytics are disabled in this Vistara AI build. Your API keys and prompts go only to your chosen provider."
+  "privacy.disabled": "Usage analytics are disabled in this Vistara AI build. Your API keys and prompts go only to your chosen provider.",
+  "models.ollama.failed": "The test failed. Check the server connection and retry; this is not a successful compatibility result.",
+  "models.ollama.listHint": "Connect / refresh List Models to see installed models. No models are downloaded automatically.",
+  "models.ollama.timeout": "Request timeout (seconds)",
+  "models.ollama.localHint": "Local inference has no provider per-token charge. Hardware and model capabilities determine performance. Add an installed model, then Test Model before Agent use.",
+  "models.ollama.ready": "Agent Ready (structured tools tested)",
+  "models.ollama.notReady": "Not Agent Ready — test required",
+  "models.ollama.testOne": "Test Model",
+  "models.ollama.originHint": "Allow only this exact extension origin. Restart Ollama after changing the variable. Keep the server bound locally; do not expose it to the internet.",
+  "models.ollama.empty": "Connected: no models installed. Use Ollama to download a model of your choice, then refresh.",
+  "models.ollama.installed": "Installed Ollama models"
 }

@@ -57,6 +57,19 @@ export interface UserStepDetails {
 }
 
 export interface Result<T = unknown> {
+  /** Shape-only diagnostics: never argument values, page content, credentials or selectors. */
+  argumentDiagnostic?: {
+    stage: string;
+    tool: string;
+    targets: Array<{ path: string; shape: string }>;
+    issues?: Array<{ path: string; code: string }>;
+    normalized?: boolean;
+    handlerAttempted: boolean;
+    dispatchAttempted: boolean;
+    refs?: Array<{ path: string; ref: string }>;
+    provider?: string;
+    model?: string;
+  };
   ok: boolean;
   error?: ProtocolError;
   receipt?: ActionReceipt;

@@ -37,6 +37,24 @@ describe('testConnection', () => {
     expect(r).toMatchObject({ ok: true, toolCalling: true });
   });
 
+  it.each(['{"status":"wrong"}', '{"status":"ok","extra":true}', '{}'])(
+    'does not accept malformed diagnostic arguments %s',
+    async args => {
+      const fetch = vi.fn(async () =>
+        sse([
+          chunk({
+            role: 'assistant',
+            tool_calls: [
+              { index: 0, id: 'bad', type: 'function', function: { name: 'report_status', arguments: args } },
+            ],
+          }),
+          chunk({}, 'tool_calls'),
+        ]),
+      ) as unknown as typeof globalThis.fetch;
+      expect((await testConnection({ kind: 'ollama', modelName: 'local' }, { fetch })).toolCalling).toBe(false);
+    },
+  );
+
   it('marks a model that answers with text as having no tool calling', async () => {
     const fetch = vi.fn(async () =>
       sse([chunk({ role: 'assistant', content: 'ok' }), chunk({}, 'stop')]),

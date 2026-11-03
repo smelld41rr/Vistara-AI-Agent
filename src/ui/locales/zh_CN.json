@@ -52,7 +52,7 @@
   "models.testNoTools": "已连接，但模型没有调用测试工具。它被标记为“不支持工具调用”，无法运行智能体。",
   "models.fix.lmstudio": "LM Studio 拒绝了请求。请在 LM Studio 的开发者设置中打开“Enable CORS”，然后重试。",
   "models.fix.generic": "服务器拒绝了请求或无法连接。请检查地址，并在服务器上允许来自浏览器扩展的请求（CORS）。",
-  "models.fix.ollama": "Ollama 拒绝了来自扩展的请求。请允许扩展来源并重启 Ollama：",
+  "models.fix.ollama": "无法访问本地服务器，或服务器拒绝了扩展来源。请先确认 Ollama 已安装并在配置的地址运行。如果日志确认来源被拒绝，请允许此确切扩展来源并重启：",
   "models.fix.ollama.mac": "launchctl setenv OLLAMA_ORIGINS \"chrome-extension://*\"\n（然后退出并重新打开 Ollama）",
   "models.fix.ollama.windows": "设置 → 系统 → 系统信息 → 高级系统设置 → 环境变量：\nOLLAMA_ORIGINS = chrome-extension://*\n（然后退出并重新打开 Ollama）",
   "models.fix.ollama.linux": "sudo systemctl edit ollama.service\n[Service]\nEnvironment=\"OLLAMA_ORIGINS=chrome-extension://*\"\nsudo systemctl restart ollama",
@@ -464,5 +464,15 @@
   "notice.reasoningDropped": "此模型不接受推理设置；将不使用该设置继续。",
   "notice.imagesDropped": "此模型不接受图片；将不使用图片继续。",
   "notice.stopped": "已停止 · 接下来要 Vistara AI 做什么？",
-  "privacy.disabled": "此 Vistara AI 版本已停用使用情况分析。API 密钥和提示仅发送到您选择的提供商。"
+  "privacy.disabled": "此 Vistara AI 版本已停用使用情况分析。API 密钥和提示仅发送到您选择的提供商。",
+  "models.ollama.failed": "测试失败。请检查服务器连接后重试；这不是成功的兼容性结果。",
+  "models.ollama.listHint": "连接或刷新模型列表以查看已安装的模型。不会自动下载模型。",
+  "models.ollama.timeout": "请求超时（秒）",
+  "models.ollama.localHint": "本地推理没有供应商按词元收费。性能取决于硬件和模型能力。添加已安装的模型后，请先测试再用于智能体。",
+  "models.ollama.ready": "智能体就绪（已测试结构化工具）",
+  "models.ollama.notReady": "智能体未就绪 — 需要测试",
+  "models.ollama.testOne": "测试模型",
+  "models.ollama.originHint": "只允许此扩展的确切来源。更改变量后请重启 Ollama。保持服务器仅在本地监听，不要暴露到互联网。",
+  "models.ollama.empty": "已连接：尚未安装模型。请在 Ollama 中自行下载所需模型，然后刷新。",
+  "models.ollama.installed": "已安装的 Ollama 模型"
 }

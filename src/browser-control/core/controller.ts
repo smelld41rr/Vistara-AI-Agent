@@ -1,3 +1,4 @@
+import { argumentShapes, proposeRefArguments, validationIssues } from './arguments';
 // The controller: sessions, tabs, refs and tool dispatch. It runs in the extension's service worker;
 // its clients are in-process (the extension's agent, the test panel) and, later, an MCP bridge.
 import { isLayerError, LayerError } from '../protocol/errors';
@@ -165,6 +166,8 @@ export function checkCancelled(ctx: ToolContext): void {
 }
 
 export interface CallOptions {
+  /** Trusted agent adapter only. Public/test-panel calls remain strict. */
+  normalizeRefTargets?: boolean;
   signal?: AbortSignal;
 }
 
@@ -688,6 +691,10 @@ export class Session {
     const spec = toolSpec(tool);
     let args: Record<string, unknown> = (rawArgs ?? {}) as Record<string, unknown>;
     let tabId: number | null = null;
+    const proposed = options.normalizeRefTargets ? proposeRefArguments(rawArgs) : { args: rawArgs, refs: [] };
+    let diagnosticStage: 'controller-validation' | 'reference-validation' | 'handler' = 'controller-validation';
+    let handlerAttempted = false;
+    let schemaIssues: Array<{ path: string; code: string }> | undefined;
     const readOnly = spec ? isReadOnly(spec, args) : true;
     let result: Result;
     try {
@@ -698,12 +705,31 @@ export class Session {
       if (spec.capability !== 'core' && !this.capabilities.has(spec.capability)) {
         throw new LayerError('CAPABILITY_DISABLED', `Tool ${tool} needs the capability "${spec.capability}"`);
       }
-      const parsed = spec.args.safeParse(rawArgs ?? {});
+      const parsed = spec.args.safeParse(proposed.args ?? {});
       if (!parsed.success) {
-        const issues = parsed.error.issues.map(i => `${i.path.join('.') || '(arguments)'}: ${i.message}`).join('; ');
-        throw new LayerError('INVALID_ARGUMENT', `Invalid arguments for ${tool}: ${issues}`);
+        const issues = validationIssues(parsed.error.issues);
+        schemaIssues = issues;
+        throw new LayerError(
+          'INVALID_ARGUMENT',
+          `Invalid arguments for ${tool}: ${issues.map(i => i.path + ': ' + i.code).join('; ')}. Targets must be objects, e.g. {"target":{"ref":"g29"}} or {"target":{"role":"button","name":"Hint"}}. Example refs are placeholders; use find/snapshot for actual fresh refs. Nothing was dispatched.`,
+          {
+            details: {
+              stage: 'controller-validation',
+              tool,
+              targets: argumentShapes(rawArgs),
+              issues,
+              dispatchAttempted: false,
+            },
+          },
+        );
       }
       args = parsed.data as Record<string, unknown>;
+      // Do not echo a guessed bare target: it may be private text rather than an issued label.
+      if (proposed.refs.some(r => !this.controller.registry.get(r.ref)))
+        throw new LayerError(
+          'REF_UNKNOWN',
+          'Bare target is not an issued reference. Take a fresh snapshot/find and use a target object. Nothing was dispatched.',
+        );
       tabId = this.#resolveTab(tool, args);
       if (tabId !== null) await this.checkTabSite(tabId);
       // A JavaScript dialog blocks the renderer: nothing but handle_dialog can work on the tab meanwhile.
@@ -731,8 +757,28 @@ export class Session {
         attach: () => this.controller.attach(tabId!),
         signal: options.signal,
       };
-      const run = () => {
+      const run = async () => {
         checkCancelled(ctx);
+        diagnosticStage = 'reference-validation';
+        for (const normalized of proposed.refs) {
+          const record = this.controller.registry.get(normalized.ref);
+          // Only a ref in the current capture AND this session's presented set can be repaired.
+          if (
+            !record ||
+            !this.known.has(tabId!, normalized.ref) ||
+            !ctx.tab().last?.observation.shown.has(normalized.ref) ||
+            ctx.tab().last?.actionSeq !== ctx.tab().actionSeq
+          )
+            throw new LayerError(
+              'REF_NOT_PRESENTED',
+              'Bare target is not in the current observation for this session. Take snapshot/find and use {target:{ref:...}}. Nothing was dispatched.',
+            );
+          const resolved = await resolveTarget(ctx, { ref: normalized.ref });
+          await ctx.tab().probe!.release(resolved.frame, resolved.objectId);
+          checkCancelled(ctx);
+        }
+        diagnosticStage = 'handler';
+        handlerAttempted = true;
         return handler(ctx, args);
       };
       const outcome = tabId === null ? await run() : await this.controller.locks.run(tabId, run);
@@ -752,6 +798,22 @@ export class Session {
           ...this.#policyNotices(tabId),
           ...pendingLines(pending),
         ].join('\n'),
+      };
+    }
+    if (proposed.refs.length || (result.error?.code === 'INVALID_ARGUMENT' && result.error.delivered === false)) {
+      result.argumentDiagnostic = {
+        stage: diagnosticStage,
+        tool,
+        targets: argumentShapes(rawArgs),
+        issues: schemaIssues,
+        normalized: proposed.refs.length > 0 && handlerAttempted,
+        handlerAttempted,
+        dispatchAttempted: result.receipt
+          ? result.receipt.dispatched !== false
+          : result.error?.delivered !== false && handlerAttempted,
+        ...(diagnosticStage !== 'controller-validation'
+          ? { refs: proposed.refs.filter(r => this.known.has(tabId!, r.ref)).map(r => ({ path: r.path, ref: r.ref })) }
+          : {}),
       };
     }
     // Whatever path printed it, a value the tab's observations mask does not leave in a result.

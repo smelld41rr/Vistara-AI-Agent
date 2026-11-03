@@ -1,3 +1,4 @@
+import { testOllamaAgent } from './ollama-test';
 // Testing one model, shared by Settings → Providers and the welcome page: the model's API first, then, for the whole
 // test, the probes of Test models. What was learnt is stored on the model's entry, unless the provider's address
 // changed meanwhile, since it describes the old server.
@@ -10,7 +11,10 @@ import { t } from '@src/ui/i18n';
 export interface ModelTest {
   /** Absent when only the API was read. */
   result?: ConnectionResult;
-  patch: Pick<ModelEntry, 'fromApi' | 'detectedContext' | 'noToolCalling'> & { tested?: Omit<LearntFacts, 'at'> };
+  patch: Pick<ModelEntry, 'fromApi' | 'detectedContext' | 'noToolCalling'> & {
+    tested?: Omit<LearntFacts, 'at'>;
+    agentTest?: ModelEntry['agentTest'];
+  };
 }
 
 /**
@@ -31,7 +35,13 @@ export async function testModel(
   apiKey: string,
   whole: boolean,
 ): Promise<ModelTest> {
-  const spec = { kind: provider.kind, modelName, apiKey, baseUrl: provider.baseUrl };
+  const spec = {
+    kind: provider.kind,
+    modelName,
+    apiKey,
+    baseUrl: provider.baseUrl,
+    requestTimeoutMs: provider.requestTimeoutMs,
+  };
   const at = new Date().toISOString();
   const api = await readModelInfo(spec);
   const patch: ModelTest['patch'] = { fromApi: api ? { ...api, at } : undefined };
@@ -40,7 +50,11 @@ export async function testModel(
   // The probes ask only what no source said: the stored overrides and answers, and what the API said just now.
   const stored = provider.models.find(m => m.name === modelName);
   const ask = probeAsk({ ...spec, overrides: stored?.overrides, tested: stored?.tested, fromApi: patch.fromApi });
-  const result = await testConnection(spec, {}, ask);
+  const result = provider.kind === 'ollama' ? await testOllamaAgent(spec) : await testConnection(spec, {}, ask);
+  if (provider.kind === 'ollama') {
+    patch.agentTest = { passed: result.ok && result.toolCalling, at };
+    patch.noToolCalling = !patch.agentTest.passed;
+  }
   if (result.ok) {
     patch.noToolCalling = !result.toolCalling;
     if (result.tested) patch.tested = result.tested;

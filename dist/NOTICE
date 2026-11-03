@@ -15,3 +15,13 @@ provider, safety and fixture architecture is derived from the pinned source.
 Vistara AI is an independent modified distribution. NanoBrowser's maintainers do
 not endorse this product. No NanoBrowser logos or trademarks are used as Vistara's
 product identity. Original project references are retained solely for attribution.
+
+Vistara AI modifications, 2 November 2026 (0.3.1): guarded target argument
+adaptation, model schema/examples, shape-only diagnostics, invalid-call recovery,
+verified editor selection, regression tests and release documentation. See
+docs/ARGUMENT_FIX_REPORT.md for changes and verification limitations.
+
+Vistara AI modifications, 3 November 2026 (0.3.2): reusable full-page Settings
+navigation, Ollama management/readiness and strict diagnostic validation, local
+request bounds, exact-origin guidance, regression tests and documentation.
+See docs/OLLAMA_SETTINGS_REPORT.md. Original attribution remains applicable.

@@ -1,6 +1,7 @@
+import { z } from 'zod';
 // Test models and model lists for the Models page. Called from the options page directly: the page needs no
 // worker command.
-import { CHAT_COMPLETIONS_KINDS, createModel, DEFAULT_BASE_URLS, openAICompatibleBaseUrl } from './providers';
+import { CHAT_COMPLETIONS_KINDS, createModel, openAICompatibleBaseUrl } from './providers';
 import type { CreateModelOptions, ModelSpec } from './providers';
 import { isOriginRefused } from './errors';
 import { refusesImages, refusesReasoning, streamTurn } from './stream';
@@ -82,7 +83,17 @@ export async function testConnection(
       ms: result.durationMs,
     };
   }
-  const toolCalling = result.toolCalls.some(c => c.toolName === 'report_status' && !c.invalid);
+  const toolCalling =
+    result.toolCalls.length === 1 &&
+    result.toolCalls.every(
+      c =>
+        c.toolName === 'report_status' &&
+        !c.invalid &&
+        z
+          .object({ status: z.literal('ok') })
+          .strict()
+          .safeParse(c.input).success,
+    );
   // A reply cut short before any tool call says nothing about tool calling: the model may have spent its output on
   // reasoning. Reported as a failed test, so nothing is stored and a model that worked keeps working.
   if (!toolCalling && result.finish === 'length') {
@@ -167,9 +178,16 @@ export async function listModels(
   const get = async (url: string, headers: Record<string, string> = {}) => {
     let response: Response;
     try {
-      response = await fetchFn(url, { headers });
+      response = await fetchFn(url, { headers, signal: AbortSignal.timeout(15_000) });
     } catch (error) {
-      throw Object.assign(new Error(`Could not reach ${new URL(url).host}`), { originRefused: isOriginRefused(error) });
+      throw Object.assign(
+        new Error(
+          error instanceof Error && /timeout|abort/i.test(error.name)
+            ? 'Request timeout'
+            : `Could not reach ${new URL(url).host}`,
+        ),
+        { originRefused: isOriginRefused(error) },
+      );
     }
     if (!response.ok) {
       // The provider's own reason when its body has one (`{ error: { message } }`), else the status line.
@@ -211,9 +229,11 @@ export async function listModels(
       break;
     }
     case 'ollama': {
-      const server = (spec.baseUrl?.trim() || DEFAULT_BASE_URLS.ollama!).replace(/\/+$/, '').replace(/\/v1$/, '');
+      const server = openAICompatibleBaseUrl('ollama', spec.baseUrl)!.replace(/\/v1$/, '');
       const body = await get(`${server}/api/tags`);
-      entries = ((body.models as ListEntry[]) ?? []).map(m => [String(m.name), m]);
+      if (!Array.isArray(body.models) || body.models.some(m => !m || typeof m.name !== 'string' || !m.name.trim()))
+        throw new Error('Malformed Ollama model list response');
+      entries = (body.models as ListEntry[]).map(m => [String(m.name), m]);
       break;
     }
     default: {
@@ -254,7 +274,7 @@ export async function detectContext(
   const root = (openAICompatibleBaseUrl(spec.kind, spec.baseUrl) ?? '').replace(/\/v1$/, '');
   const json = async (url: string, init?: RequestInit) => {
     try {
-      const response = await fetchFn(url, init);
+      const response = await fetchFn(url, { ...init, signal: AbortSignal.timeout(15_000) });
       return response.ok ? ((await response.json()) as Record<string, unknown>) : null;
     } catch {
       return null;

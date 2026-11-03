@@ -37,3 +37,5 @@ export function createChromeController(options: { prompt?: UserPrompt } = {}): P
     prompt: options.prompt,
   });
 }
+
+export { argumentShapes } from './core/arguments';

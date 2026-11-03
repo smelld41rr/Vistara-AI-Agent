@@ -78,6 +78,68 @@ function schemaWithout(schema: unknown, hidden: string[]): unknown {
   return s;
 }
 
+/** The agent has ref/semantic targeting only. Do not advertise disabled selector/coordinate capabilities. */
+const MODEL_TARGET = {
+  description:
+    'Target OBJECT, never a string or {id:...}. Use {"ref":"g54"} with a freshly observed ref, or {"role":"button","name":"Hint"}. Example refs are not real refs.',
+  anyOf: [
+    {
+      type: 'object',
+      properties: {
+        ref: {
+          type: 'string',
+          minLength: 1,
+          maxLength: 64,
+          description: 'Exact ref returned by current snapshot/find',
+        },
+      },
+      required: ['ref'],
+      additionalProperties: false,
+    },
+    {
+      type: 'object',
+      properties: {
+        role: { type: 'string', minLength: 1 },
+        name: { type: 'string' },
+        nth: { type: 'integer', minimum: 0 },
+        within: { type: 'string' },
+      },
+      required: ['role'],
+      additionalProperties: false,
+    },
+  ],
+};
+function modelTargets(schema: unknown): unknown {
+  if (!schema || typeof schema !== 'object') return schema;
+  if (Array.isArray(schema)) return schema.map(modelTargets);
+  const obj = schema as Record<string, unknown>;
+  const out = Object.fromEntries(Object.entries(obj).map(([key, value]) => [key, modelTargets(value)]));
+  if (obj.properties && typeof obj.properties === 'object') {
+    const props = { ...(out.properties as Record<string, unknown>) };
+    if ('target' in props) props.target = MODEL_TARGET;
+    if (props.submit && typeof props.submit === 'object' && 'anyOf' in (props.submit as object))
+      props.submit = MODEL_TARGET;
+    // Scroll destination also supports top/bottom; retain those alongside supported target objects.
+    if (props.to && typeof props.to === 'object')
+      props.to = { anyOf: [{ type: 'string', enum: ['top', 'bottom'] }, MODEL_TARGET] };
+    out.properties = props;
+  }
+  return out;
+}
+const EXAMPLES: Record<string, string> = {
+  click:
+    ' Click a known control: {"target":{"ref":"g54"}}. For Hint/Run Code, find the button first, click its fresh ref, then observe the result. Submit remains subject to all approvals/handover.',
+  set: ' Set exact text: {"target":{"ref":"g29"},"value":"Hello world"}. This replaces an editable value via trusted browser input and read-back. Never use a bare target string or hidden editor internals.',
+  type: ' Insert into current focus: {"text":"Hello world"}; or provide target OBJECT {"target":{"ref":"g29"},"text":"Hello world"}. Does not implicitly replace existing text. Preserve supplied code exactly.',
+  press:
+    ' Key/chord: {"keys":"Control+A","target":{"ref":"g29"}}. Without target keys go to verified current focus. Do not submit by Enter unless requested and permitted.',
+  fill_form:
+    ' Fields contain target OBJECTS: {"fields":[{"target":{"ref":"g29"},"value":"Hello world"}]}. Submit is an optional target OBJECT subject to policy.',
+  find: ' Example: {"role":"button","name":"Hint"}. Returns observed refs, not an action; use a returned ref as {"target":{"ref":"..."}}.',
+  snapshot:
+    ' Example: {"mode":"interactive"}. Refresh after stale/unknown/changed refs; use only returned refs, never guessed example IDs.',
+};
+
 export const DONE_TOOL: AgentTool = {
   name: 'done',
   source: 'agent',
@@ -105,9 +167,9 @@ export function allTools(agentTools: AgentTool[] = []): AgentTool[] {
         source: 'layer',
         group: GROUPS[spec.name],
         required: spec.name === 'snapshot',
-        description: spec.description,
+        description: spec.description + (EXAMPLES[spec.name] ?? ''),
         parameters: ((p: unknown) => (spec.name === 'upload' ? withAttachmentIds(p) : p))(
-          schemaWithout(argsJsonSchema(spec), [...HIDDEN['*'], ...(HIDDEN[spec.name] ?? [])]),
+          modelTargets(schemaWithout(argsJsonSchema(spec), [...HIDDEN['*'], ...(HIDDEN[spec.name] ?? [])])),
         ),
       }) satisfies AgentTool,
   );

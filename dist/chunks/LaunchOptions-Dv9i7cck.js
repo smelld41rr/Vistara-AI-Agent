@@ -1,0 +1,1 @@
+import{ChromeReleaseChannel as e}from"./puppeteer-browsers-stub-v0NUFMu9.js";function t(t){switch(t){case`chrome`:return e.STABLE;case`chrome-dev`:return e.DEV;case`chrome-beta`:return e.BETA;case`chrome-canary`:return e.CANARY}}export{t as convertPuppeteerChannelToBrowsersChannel};

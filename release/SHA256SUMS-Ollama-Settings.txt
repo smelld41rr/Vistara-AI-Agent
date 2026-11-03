@@ -1,0 +1,2 @@
+2ad585bb1aa04535d9e58da42fe848e12e16b587693a44803afb7200fb26337f  Vistara-AI-Ollama-Settings-Chrome.zip
+0dc08774640484591d57809823222aacc7a35b9dadf80792d24906c93c3a33ab  Vistara-AI-Ollama-Settings-Source.zip

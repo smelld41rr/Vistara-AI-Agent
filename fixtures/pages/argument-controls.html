@@ -1,0 +1,13 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Argument and editor fixture — NOT GUVI</title><style>body{font:16px system-ui;padding:24px}textarea,[contenteditable]{display:block;width:600px;min-height:90px;border:1px solid #555;margin:16px 0}.framework textarea{width:0;height:0;opacity:0;position:absolute}</style></head><body>
+<h1>Browser argument fixtures (not a real GUVI page)</h1><button type="button" id="hint">Hint</button><section id="hint-content" hidden>Hint opened by real click.</section>
+<label>Java 8 code<textarea aria-label="Java 8 code" id="code"></textarea></label>
+<div class="cm-editor"><div role="textbox" aria-label="CodeMirror content" contenteditable="true">old text</div></div>
+<div role="textbox" aria-label="Plain editable" contenteditable="true">old text</div>
+<div class="monaco-editor framework"><textarea aria-label="Hidden Monaco input"></textarea><div>Monaco-shaped hidden-input fixture; not the Monaco library.</div></div>
+<div class="ace_editor framework"><textarea aria-label="Hidden Ace input"></textarea><div>Ace-shaped hidden-input fixture; not the Ace library.</div></div>
+<label>Language<select aria-label="Language"><option>Java 8</option><option>JavaScript</option></select></label><label><input type="checkbox" aria-label="Show tests">Show tests</label>
+<button type="button" id="run">Run Code</button><output id="output"></output>
+<form id="submit-form"><button type="submit">Submit</button></form><output id="submission"></output>
+<iframe title="Editor frame" srcdoc="<textarea aria-label='Frame editor'></textarea>"></iframe>
+<script>document.querySelector('#hint').onclick=()=>document.querySelector('#hint-content').hidden=false;document.querySelector('#run').onclick=()=>document.querySelector('#output').textContent=document.querySelector('#code').value==='class Main {}'?'Fixture run output: supplied code observed.':'Fixture run output: different code';document.querySelector('#submit-form').onsubmit=e=>{e.preventDefault();document.querySelector('#submission').textContent='Fixture submission received (not an Accepted verdict).';};</script>
+</body></html>

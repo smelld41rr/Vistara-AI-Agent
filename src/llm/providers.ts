@@ -19,6 +19,7 @@ export interface ModelSpec {
   maxOutputTokens?: number;
   /** For a local server: at most this many requests at once to it. */
   maxConcurrent?: number;
+  requestTimeoutMs?: number;
 }
 
 export type ProviderOptions = Record<string, Record<string, unknown>>;
@@ -63,7 +64,18 @@ export function openAICompatibleBaseUrl(kind: ProviderKind, baseUrl?: string): s
   if (kind === 'openrouter') return fallback;
   const url = (baseUrl?.trim() || fallback)?.replace(/\/+$/, '');
   if (!url) return undefined;
-  if (kind === 'ollama' || kind === 'lmstudio') return url.endsWith('/v1') ? url : `${url}/v1`;
+  if (kind === 'ollama') {
+    const parsed = new URL(url);
+    if (
+      !['http:', 'https:'].includes(parsed.protocol) ||
+      parsed.username ||
+      parsed.password ||
+      parsed.search ||
+      parsed.hash
+    )
+      throw new Error('Invalid server URL');
+  }
+  if (kind === 'ollama' || kind === 'lmstudio') return `${url.replace(/(?:\/v1)+$/, '')}/v1`;
   return url;
 }
 

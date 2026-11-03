@@ -1,7 +1,7 @@
 /* Vistara AI modification, 2026-11-02: branding/privacy changes; see NOTICE and docs/CHANGED_FILES.md. */
 // The agent loop, shaped like pi's runLoop: turns of one model call and its tool batch, with all browser policy in six
 // hooks. The worker owns the run; Chrome is reached through the ports.
-import { cutText, siteOf } from '@src/browser-control';
+import { argumentShapes, cutText, siteOf } from '@src/browser-control';
 import type { Result, UserStepDetails } from '@src/browser-control';
 import { requestOutputLimit, streamTurn } from '@src/llm';
 import type { ModelMessage, ToolCallRequest, TurnResult } from '@src/llm';
@@ -498,7 +498,7 @@ export class AgentLoop {
         kind,
         isError: true,
         text: known
-          ? `error: the arguments of ${call.toolName} could not be read: ${call.invalid}`
+          ? `error: the arguments of ${call.toolName} could not be read: SDK parsing/schema rejected this call. Correct target objects using fresh snapshot/find; nothing was dispatched.`
           : notInRun
             ? `error: ${call.toolName} is not available in this run.`
             : `error: ${call.toolName} is not available.`,
@@ -520,6 +520,30 @@ export class AgentLoop {
   /** After a call: hand-overs, guards, verification debt and the result cap. */
   async afterToolCall(given: CallOutcome): Promise<CallOutcome> {
     let outcome = given;
+    const spec = this.options.model.chat.spec;
+    const safeModel =
+      /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$/.test(spec.modelName) &&
+      !spec.modelName.includes('://') &&
+      !/sk-|gsk_|AIza/i.test(spec.modelName) &&
+      !(spec.apiKey && spec.modelName.includes(spec.apiKey))
+        ? spec.modelName
+        : '(redacted)';
+    const diagnostic =
+      outcome.result?.argumentDiagnostic ??
+      (outcome.call.invalid
+        ? {
+            stage: 'sdk-parsing',
+            tool: outcome.call.toolName,
+            targets: argumentShapes(outcome.call.input),
+            handlerAttempted: false,
+            dispatchAttempted: false,
+          }
+        : undefined);
+    if (diagnostic) {
+      const safe = { ...diagnostic, provider: spec.kind, model: safeModel };
+      console.info('[tool-arguments]', safe);
+      outcome = { ...outcome, text: outcome.text + '\nArgument diagnostic: ' + JSON.stringify(safe) };
+    }
     if (outcome.result?.error?.code === 'USER_STEP' && outcome.result.error.details)
       outcome = await this.#handOver(outcome);
     else if (!outcome.skipped && !outcome.done) outcome = await this.#promptDialog(outcome);
@@ -533,6 +557,7 @@ export class AgentLoop {
         (outcome.call.input ?? {}) as Record<string, unknown>,
         outcome.result,
         outcome.isError,
+        !!outcome.call.invalid,
       );
       if (verdict.nudge) notes.push(note(verdict.nudge));
       if (verdict.stop) this.#guardStop ??= { reason: verdict.stop, guard: verdict.guard ?? 'errors' };

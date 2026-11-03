@@ -215,7 +215,13 @@ async function streamTurnNow(request: TurnRequest): Promise<TurnResult> {
         maxOutputTokens: request.maxOutputTokens ?? request.chat.spec.maxOutputTokens,
         ...(reasoning ? { reasoning } : {}),
         maxRetries: 0,
-        abortSignal: request.signal,
+        abortSignal:
+          request.chat.spec.kind === 'ollama'
+            ? AbortSignal.any([
+                ...(request.signal ? [request.signal] : []),
+                AbortSignal.timeout(Math.min(600_000, Math.max(5_000, request.chat.spec.requestTimeoutMs ?? 120_000))),
+              ])
+            : request.signal,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         providerOptions: request.chat.providerOptions as any,
         onError: () => undefined,
@@ -233,7 +239,11 @@ async function streamTurnNow(request: TurnRequest): Promise<TurnResult> {
             break;
           case 'tool-call': {
             started = true;
-            const invalid = 'invalid' in part && part.invalid ? errorText(part.error) : undefined;
+            // SDK errors can embed the complete input (including private code). Never retain that raw error.
+            const invalid =
+              'invalid' in part && part.invalid
+                ? 'SDK parsing/schema validation rejected this call; no dispatch. Correct the tool arguments, using target:{ref:...} from a fresh observation.'
+                : undefined;
             toolCalls.push({
               toolCallId: part.toolCallId,
               toolName: part.toolName,

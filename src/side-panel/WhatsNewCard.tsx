@@ -1,3 +1,4 @@
+import { openSettings } from '@src/ui/options';
 // The What's new card above the composer, once after an update to a release that has an entry: its highlights, then,
 // after an update from v0.2, a row for each thing the update could not do for the user, with its own button. Got it
 // closes it for good. While it shows, the quick start is hidden.
@@ -17,10 +18,6 @@ export function useWhatsNew(): string | null {
   const state = useStorage(whatsNewStorage, null);
   const release = releaseOf(chrome.runtime.getManifest().version);
   return state && !state.dismissed && state.version === release && WHATS_NEW[release] ? release : null;
-}
-
-function openSettings(section: string): void {
-  void chrome.tabs.create({ url: chrome.runtime.getURL(`/options.html#${section}`) });
 }
 
 const smallButton =
