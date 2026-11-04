@@ -141,13 +141,13 @@ describe('the live pair', () => {
 });
 
 describe('a model that is no longer configured', () => {
-  it("falls back to the default model, then the first usable one, keeping the pair's effort", async () => {
+  it('refuses a removed explicit model instead of silently switching providers; initial selection still works', async () => {
     fakeChrome({
       'nb.settings': settings({ defaultModel: { providerId: 'o', model: 'gpt-4o' }, reasoning: 'low' }),
       'nb.providers': PROVIDERS,
     });
     await setLive('c1', { model: { providerId: 'gone', model: 'x' }, reasoning: 'high' });
-    expect(await livePair('c1')).toEqual({ model: { providerId: 'o', model: 'gpt-4o' }, reasoning: 'high' });
+    expect(await livePair('c1')).toBeNull();
     fakeChrome({ 'nb.settings': settings({ defaultModel: null, reasoning: 'medium' }), 'nb.providers': PROVIDERS });
     expect(await livePair(null)).toEqual({
       model: { providerId: 'a', model: 'claude-sonnet-5-5' },

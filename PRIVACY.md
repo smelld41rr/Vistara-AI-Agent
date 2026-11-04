@@ -9,3 +9,7 @@ The provider processes prompts, page observations, screenshots or attachments th
 Chrome Debugger and page access are required by the upstream CDP browser engine; optional permissions are used for downloads, notifications and tab groups. Ask/Auto/site choices and the upstream sensitive-step handover remain. Page content is untrusted; automation still has risks and best-effort detection is not a guarantee. See SECURITY.md and the native checklist.
 
 User-clicked external links lead to the Vistara repository, configured provider/model documentation, or legally required dependency/upstream attribution. NanoBrowser maintainers do not operate this distribution or endorse it.
+
+## Compatible provider settings (0.3.3)
+
+API keys are stored separately in ordinary chrome.storage.local, not encrypted by Vistara. The supported Chrome storage access-level API restricts this area to trusted extension contexts before key access; content scripts do not receive these keys. Confirming an endpoint change rotates its identity and removes the saved key. Compatibility tests send public synthetic prompts and tool results only to the configured provider and may consume its quota. They never execute a webpage action. No automatic provider billing, model download or cross-provider fallback is enabled. See docs/PROVIDER_PRESETS.md.

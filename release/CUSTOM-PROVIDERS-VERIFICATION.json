@@ -1,0 +1,35 @@
+{
+  "status": "PASS",
+  "artifacts": [
+    {
+      "file": "Vistara-AI-Custom-Providers-Chrome.zip",
+      "bytes": 1287661,
+      "entries": 45,
+      "sha256": "285b963203441ccb5ac3117544fc70b9b160d47707798dce497715d8c1b4e84f",
+      "integrity": "PASS"
+    },
+    {
+      "file": "Vistara-AI-Custom-Providers-Source.zip",
+      "bytes": 1250035,
+      "entries": 525,
+      "sha256": "bdc7b9f50c35628565c6e1cb3b0855e4a7eda3e4bed02723ed80a2796ef5dff4",
+      "integrity": "PASS"
+    }
+  ],
+  "sourceFiles": 525,
+  "upstream": "19dc8e8a9be6ed06c0ef9ec7de8d84bf6a88c458",
+  "browserControlEquivalentAfterBrandNotices": false,
+  "reviewedBrowserControlChanges": [
+    "src/browser-control/index.ts",
+    "src/browser-control/core/controller.ts",
+    "src/browser-control/probe/source.ts",
+    "src/browser-control/protocol/results.ts",
+    "src/browser-control/core/tools/text.ts"
+  ],
+  "apacheLicenseUnchanged": true,
+  "originalServiceDestinationsAbsentFromBuild": true,
+  "sourceHistoryAndZipSecretPatternFindings": [],
+  "nativeChrome": "BLOCKED/UNVERIFIED",
+  "liveProviders": "UNVERIFIED",
+  "limits": "Static scans are heuristic; no native/live success is inferred from source or unit tests."
+}

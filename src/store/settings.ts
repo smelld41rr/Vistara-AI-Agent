@@ -81,6 +81,7 @@ export interface ProfileOverrides {
 export interface ModelEntry {
   name: string;
   agentTest?: { passed: boolean; at: string };
+  chatTest?: { passed: boolean; at: string };
   overrides?: ProfileOverrides;
   /** Detected from a local server; only ever lowers the window. */
   detectedContext?: number;
@@ -114,16 +115,24 @@ export interface ProviderConfig {
   baseUrl?: string;
   models: ModelEntry[];
   requestTimeoutMs?: number;
+  credentialRevision?: number;
 }
 
 export const providersStorage = createStorage<ProviderConfig[]>('nb.providers', [], { liveUpdate: true });
 
 /** API keys by provider id. Never exported, never logged, never sent anywhere but to their provider. */
-export const keysStorage = createStorage<Record<string, string>>('nb.keys', {}, { liveUpdate: true });
+export const keysStorage = createStorage<Record<string, string>>(
+  'nb.keys',
+  {},
+  { liveUpdate: true, trustedOnly: true },
+);
 
-/** Ollama must pass live structured-tool diagnostics on this configured server before Agent selection. */
+/** Ollama/custom entries require passing structured-tool diagnostics on their configured endpoint before Agent selection. */
 export function agentModelAvailable(provider: ProviderConfig, model: ModelEntry): boolean {
-  return !model.noToolCalling && (provider.kind !== 'ollama' || model.agentTest?.passed === true);
+  return (
+    !model.noToolCalling &&
+    (!['ollama', 'openai-compatible'].includes(provider.kind) || model.agentTest?.passed === true)
+  );
 }
 
 export const LOCAL_KINDS: ReadonlySet<ProviderKind> = new Set(['ollama', 'lmstudio']);
@@ -196,8 +205,8 @@ export function findModel(
 }
 
 /**
- * The model a conversation uses: the first of `wanted` that is configured and passed the tool test, else the first
- * such model. Null only when there is none. The panel's picker follows the same rule.
+ * A configured requested model, or another tested model on the same provider. Never silently switch providers
+ * when an explicit selection is missing/unready. Without a requested model, choose the first usable entry.
  */
 export function usableModel(
   providers: ProviderConfig[],
@@ -205,10 +214,11 @@ export function usableModel(
 ): ModelRef | null {
   for (const ref of wanted) {
     const found = findModel(providers, ref);
-    if (found?.provider.kind === 'ollama' && !agentModelAvailable(found.provider, found.model)) {
+    if (found && !agentModelAvailable(found.provider, found.model)) {
       const tested = found.provider.models.find(m => agentModelAvailable(found.provider, m));
       return tested ? { providerId: found.provider.id, model: tested.name } : null;
     }
+    if (ref && !found) return null;
     if (found && agentModelAvailable(found.provider, found.model))
       return { providerId: found.provider.id, model: found.model.name };
   }

@@ -1,3 +1,5 @@
+import { testCompatibleModel } from './compatible-test';
+import type { DiagnosticMode } from './compatible-test';
 import { testOllamaAgent } from './ollama-test';
 // Testing one model, shared by Settings → Providers and the welcome page: the model's API first, then, for the whole
 // test, the probes of Test models. What was learnt is stored on the model's entry, unless the provider's address
@@ -9,10 +11,12 @@ import type { ModelEntry, ProviderConfig } from '@src/store/settings';
 import { t } from '@src/ui/i18n';
 
 export interface ModelTest {
+  credentialRevision?: number;
   /** Absent when only the API was read. */
   result?: ConnectionResult;
   patch: Pick<ModelEntry, 'fromApi' | 'detectedContext' | 'noToolCalling'> & {
     tested?: Omit<LearntFacts, 'at'>;
+    chatTest?: ModelEntry['chatTest'];
     agentTest?: ModelEntry['agentTest'];
   };
 }
@@ -27,13 +31,15 @@ export function listProblem(error: unknown, local: boolean): { message: string; 
 }
 
 /** Adding a model runs the whole test on a cloud endpoint, and reads only the API on a local one. */
-export const wholeTestOnAdd = (provider: ProviderConfig) => isCloudEndpoint(provider.kind, provider.baseUrl);
+export const wholeTestOnAdd = (provider: ProviderConfig) =>
+  provider.kind !== 'openai-compatible' && isCloudEndpoint(provider.kind, provider.baseUrl);
 
 export async function testModel(
   provider: ProviderConfig,
   modelName: string,
   apiKey: string,
   whole: boolean,
+  mode: DiagnosticMode = 'tools',
 ): Promise<ModelTest> {
   const spec = {
     kind: provider.kind,
@@ -43,10 +49,26 @@ export async function testModel(
     requestTimeoutMs: provider.requestTimeoutMs,
   };
   const at = new Date().toISOString();
+  if (provider.kind === 'openai-compatible' && whole) {
+    const result = await testCompatibleModel(spec, mode);
+    return {
+      credentialRevision: provider.credentialRevision,
+      result,
+      patch:
+        mode === 'connection'
+          ? {}
+          : mode === 'text'
+            ? { chatTest: { passed: result.ok && !!result.chatReady, at } }
+            : {
+                agentTest: { passed: result.ok && result.toolCalling, at },
+                noToolCalling: !(result.ok && result.toolCalling),
+              },
+    };
+  }
   const api = await readModelInfo(spec);
   const patch: ModelTest['patch'] = { fromApi: api ? { ...api, at } : undefined };
   if (provider.kind === 'ollama' || provider.kind === 'lmstudio') patch.detectedContext = await detectContext(spec);
-  if (!whole) return { patch };
+  if (!whole) return { patch, credentialRevision: provider.credentialRevision };
   // The probes ask only what no source said: the stored overrides and answers, and what the API said just now.
   const stored = provider.models.find(m => m.name === modelName);
   const ask = probeAsk({ ...spec, overrides: stored?.overrides, tested: stored?.tested, fromApi: patch.fromApi });
@@ -59,7 +81,7 @@ export async function testModel(
     patch.noToolCalling = !result.toolCalling;
     if (result.tested) patch.tested = result.tested;
   }
-  return { result, patch };
+  return { result, patch, credentialRevision: provider.credentialRevision };
 }
 
 /**
@@ -70,7 +92,9 @@ export async function saveTest(providerId: string, baseUrl: string | undefined, 
   const { tested, ...rest } = test.patch;
   await providersStorage.set(list =>
     list.map(p =>
-      p.id !== providerId || (p.baseUrl ?? '') !== (baseUrl ?? '')
+      p.id !== providerId ||
+      (p.baseUrl ?? '') !== (baseUrl ?? '') ||
+      (p.credentialRevision ?? 0) !== (test.credentialRevision ?? 0)
         ? p
         : {
             ...p,

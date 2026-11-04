@@ -53,3 +53,30 @@ describe('decideWrite: the mode and the site rule', () => {
     expect(decideWrite(mode, rule)).toBe(expected);
   });
 });
+
+describe('trusted credential storage access', () => {
+  it('restricts the Chrome local area before reading/writing a secret and never writes after a protection failure', async () => {
+    const area = { get: vi.fn(async () => ({})), set: vi.fn(async () => {}), setAccessLevel: vi.fn(async () => {}) };
+    vi.stubGlobal('chrome', { storage: { local: area } });
+    const storage = createStorage('protected', {}, { trustedOnly: true });
+    await storage.get();
+    await storage.set({ sample: 'test-only' });
+    expect(area.setAccessLevel).toHaveBeenCalledWith({ accessLevel: 'TRUSTED_CONTEXTS' });
+    expect(area.setAccessLevel.mock.invocationCallOrder[0]).toBeLessThan(area.get.mock.invocationCallOrder[0]);
+    vi.unstubAllGlobals();
+    const blocked = {
+      ...area,
+      get: vi.fn(async () => ({})),
+      set: vi.fn(async () => {}),
+      setAccessLevel: vi.fn(async () => {
+        throw new Error('policy denied');
+      }),
+    };
+    vi.stubGlobal('chrome', { storage: { local: blocked } });
+    const refused = createStorage('blocked', {}, { trustedOnly: true });
+    await expect(refused.set({ secret: 'test-only' })).rejects.toThrow('policy denied');
+    expect(blocked.get).not.toHaveBeenCalled();
+    expect(blocked.set).not.toHaveBeenCalled();
+    vi.unstubAllGlobals();
+  });
+});

@@ -1,0 +1,2 @@
+285b963203441ccb5ac3117544fc70b9b160d47707798dce497715d8c1b4e84f  Vistara-AI-Custom-Providers-Chrome.zip
+bdc7b9f50c35628565c6e1cb3b0855e4a7eda3e4bed02723ed80a2796ef5dff4  Vistara-AI-Custom-Providers-Source.zip

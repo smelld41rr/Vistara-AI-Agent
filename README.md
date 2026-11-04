@@ -1,3 +1,13 @@
+# Vistara AI 0.3.3 downloads
+
+- [Chrome extension ZIP](https://github.com/smelld41rr/Vistara-AI-Agent/raw/refs/heads/main/release/Vistara-AI-Custom-Providers-Chrome.zip)
+- [Editable source ZIP](https://github.com/smelld41rr/Vistara-AI-Agent/raw/refs/heads/main/release/Vistara-AI-Custom-Providers-Source.zip)
+- [Provider setup and official endpoints](docs/PROVIDER_PRESETS.md) · [Actual tests and limitations](docs/CUSTOM_PROVIDERS_REPORT.md)
+
+895 tests passed; 4 live-provider tests skipped. Native Chrome and real provider inference remain unverified. Earlier no-push notes describe the implementation stage; the subsequent user instruction authorizes this sanitized GitHub delivery.
+
+> Local 0.3.3 NVIDIA/custom-provider update: [setup and official endpoints](docs/PROVIDER_PRESETS.md), [actual verification and limitations](docs/CUSTOM_PROVIDERS_REPORT.md). Updated build is local; no GitHub push in this task. Older published downloads below remain 0.3.2.
+
 # Vistara AI 0.3.2 downloads
 
 - [Chrome extension ZIP](https://github.com/smelld41rr/Vistara-AI-Agent/raw/refs/heads/main/release/Vistara-AI-Ollama-Settings-Chrome.zip)

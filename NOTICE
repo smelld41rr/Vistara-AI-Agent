@@ -25,3 +25,8 @@ Vistara AI modifications, 3 November 2026 (0.3.2): reusable full-page Settings
 navigation, Ollama management/readiness and strict diagnostic validation, local
 request bounds, exact-origin guidance, regression tests and documentation.
 See docs/OLLAMA_SETTINGS_REPORT.md. Original attribution remains applicable.
+
+Vistara AI modifications, 4 November 2026 (0.3.3): documented compatible-provider
+presets, separate text/tool/continuation diagnostics, endpoint confirmation and
+credential isolation, error handling, tests and documentation. Original license
+and attribution remain. See docs/CUSTOM_PROVIDERS_REPORT.md.

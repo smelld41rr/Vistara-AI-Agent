@@ -258,6 +258,8 @@ function ModelSetup({ local }: { local: boolean }) {
     const entry: ModelEntry = {
       name: model,
       noToolCalling: !tested.toolCalling,
+      ...(test.patch.agentTest ? { agentTest: test.patch.agentTest } : {}),
+      ...(test.patch.chatTest ? { chatTest: test.patch.chatTest } : {}),
       ...(detected ? { detectedContext: detected } : {}),
       ...(test.patch.fromApi ? { fromApi: test.patch.fromApi } : {}),
       ...(test.patch.tested ? { tested: { ...test.patch.tested, at } } : {}),

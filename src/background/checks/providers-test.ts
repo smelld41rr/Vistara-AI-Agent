@@ -49,7 +49,7 @@ defineCheck({
         await options('click', { label: 'Save key' });
       };
       await saveKey('wrong-key');
-      report.keyRefused = await until(async () => (await body()).includes('did not accept this key'));
+      report.keyRefused = await until(async () => (await body()).includes('Invalid API key'));
       // A saved key cannot be edited, only cleared, before another is typed.
       await options('click', { label: 'Clear key' });
       await sleep(200);
@@ -59,16 +59,32 @@ defineCheck({
       await options('fill', { label: 'Add a model', text: 'fixture-model-info' });
       await sleep(200);
       report.addHint = (await body()).includes('Click Add to save this model.');
-      await options('click', { label: 'Add' });
+      await options('click', { label: 'Add Model Manually' });
       await sleep(200);
       report.addHintGone = !(await body()).includes('Click Add to save this model.');
       report.apiRead = await until(async () => (await model('fixture-model-info'))?.fromApi?.contextWindow === 65536);
       const added = await model('fixture-model-info');
       report.fromApi = added?.fromApi;
       report.noChatOnAdd = (await chatRequests()) === before;
+      await fetch(`${LLM}/script`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          replies: [
+            { toolCalls: [{ id: 'diagnostic-click', name: 'click', input: { target: { ref: 'g29' } } }] },
+            {
+              toolCalls: [
+                { id: 'diagnostic-set', name: 'set', input: { target: { ref: 'g29' }, value: 'Hello world' } },
+              ],
+            },
+            { text: 'VISTARA_OK' },
+          ],
+        }),
+      });
       await options('click', { label: 'Test models' });
       report.probed = await until(async () => (await model('fixture-model-info'))?.noToolCalling !== undefined, 10_000);
-      report.chatOnTest = (await chatRequests()) > before;
+      report.chatOnTest = (await chatRequests()) === before + 3;
+      report.agentReady = (await model('fixture-model-info'))?.noToolCalling === false;
     } finally {
       await chrome.tabs.remove(tab.id!).catch(() => undefined);
       await chrome.storage.local.remove(['nb.providers', 'nb.keys']);
@@ -84,7 +100,8 @@ defineCheck({
       fromApi.reasons === true &&
       report.noChatOnAdd === true &&
       report.probed === true &&
-      report.chatOnTest === true;
+      report.chatOnTest === true &&
+      report.agentReady === true;
     if (!ok) throw new Error(`providers-test: ${JSON.stringify(report)}`);
     return report;
   },

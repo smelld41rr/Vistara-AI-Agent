@@ -1,6 +1,6 @@
 {
   "name": "vistara-ai",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "private": true,
   "description": "Vistara AI \u2014 local-first browser automation with your chosen model",
   "license": "Apache-2.0",

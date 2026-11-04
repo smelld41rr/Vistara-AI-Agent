@@ -216,7 +216,7 @@ async function streamTurnNow(request: TurnRequest): Promise<TurnResult> {
         ...(reasoning ? { reasoning } : {}),
         maxRetries: 0,
         abortSignal:
-          request.chat.spec.kind === 'ollama'
+          request.chat.spec.kind === 'ollama' || request.chat.spec.requestTimeoutMs !== undefined
             ? AbortSignal.any([
                 ...(request.signal ? [request.signal] : []),
                 AbortSignal.timeout(Math.min(600_000, Math.max(5_000, request.chat.spec.requestTimeoutMs ?? 120_000))),
@@ -330,7 +330,9 @@ async function streamTurnNow(request: TurnRequest): Promise<TurnResult> {
       finish: 'error',
       usage,
       error: {
-        message: errorText(failure),
+        message: request.chat.spec.apiKey
+          ? errorText(failure).replaceAll(request.chat.spec.apiKey, '[redacted]')
+          : errorText(failure),
         status: getApiCallStatusCode(failure),
         overflow: isContextOverflow(failure),
         // fetch rejects with a TypeError when the network fails.

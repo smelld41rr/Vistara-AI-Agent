@@ -474,5 +474,21 @@
   "models.ollama.testOne": "Test Model",
   "models.ollama.originHint": "Allow only this exact extension origin. Restart Ollama after changing the variable. Keep the server bound locally; do not expose it to the internet.",
   "models.ollama.empty": "Connected: no models installed. Use Ollama to download a model of your choice, then refresh.",
-  "models.ollama.installed": "Installed Ollama models"
+  "models.ollama.installed": "Installed Ollama models",
+  "models.custom.protocol": "API protocol",
+  "models.custom.protocolHint": "Only OpenAI-compatible Chat Completions is supported here. Other protocols need their own adapters.",
+  "models.custom.testHint": "Use the exact provider model ID. Tests send short synthetic requests and may use provider quota. Connection, text generation and structured tools are separate checks. No browser action is executed.",
+  "models.custom.connection": "Test Connection",
+  "models.custom.text": "Test Text Generation",
+  "models.custom.tools": "Test Tool Calling",
+  "models.custom.configured": "Configured — test required",
+  "models.custom.chatReady": "Chat Ready",
+  "models.custom.agentReady": "Agent Ready — tools and continuation tested",
+  "models.custom.failed": "Test Failed",
+  "models.custom.httpWarning": "Remote HTTP is not encrypted: API keys and prompts could be intercepted. Prefer HTTPS. Localhost development remains supported.",
+  "models.custom.review": "Review endpoint change",
+  "models.custom.endpointWarning": "Changing the endpoint creates a new provider identity and removes its saved key and compatibility results. Re-enter credentials explicitly for the new endpoint. No requests are sent by this change.",
+  "models.custom.confirm": "Confirm endpoint change and clear key",
+  "models.custom.invalidUrl": "Enter a valid HTTP(S) API base URL without credentials, query, fragment or /chat/completions.",
+  "models.custom.addManual": "Add Model Manually"
 }

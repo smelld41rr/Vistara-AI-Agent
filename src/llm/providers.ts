@@ -1,3 +1,4 @@
+import { normalizeCompatibleUrl } from './provider-presets';
 /* Vistara AI modification, 2026-11-02: branding/privacy changes; see NOTICE and docs/CHANGED_FILES.md. */
 // Provider factories, ported from the current Vistara AI's src/background/llm/providers.ts and reduced to the
 // providers of the first release. The loop runs tools itself, so a model handle is only a model, its call settings and
@@ -63,7 +64,10 @@ export function openAICompatibleBaseUrl(kind: ProviderKind, baseUrl?: string): s
   // OpenRouter's address is fixed: the card has no field for it.
   if (kind === 'openrouter') return fallback;
   const url = (baseUrl?.trim() || fallback)?.replace(/\/+$/, '');
-  if (!url) return undefined;
+  if (!url) {
+    if (kind === 'openai-compatible') throw new Error('Invalid endpoint: a custom API base URL is required.');
+    return undefined;
+  }
   if (kind === 'ollama') {
     const parsed = new URL(url);
     if (
@@ -76,7 +80,7 @@ export function openAICompatibleBaseUrl(kind: ProviderKind, baseUrl?: string): s
       throw new Error('Invalid server URL');
   }
   if (kind === 'ollama' || kind === 'lmstudio') return `${url.replace(/(?:\/v1)+$/, '')}/v1`;
-  return url;
+  return kind === 'openai-compatible' ? normalizeCompatibleUrl(url) : url;
 }
 
 export function createModel(spec: ModelSpec, options: CreateModelOptions = {}): ChatModel {
@@ -115,6 +119,8 @@ export function createModel(spec: ModelSpec, options: CreateModelOptions = {}): 
     }
     default: {
       // Ollama, LM Studio, OpenRouter and any other OpenAI-compatible server: chat completions at the base URL.
+      if (kind === 'openai-compatible' && !spec.baseUrl?.trim())
+        throw new Error('Invalid endpoint: a custom API base URL is required.');
       const accounting = kind === 'openrouter' ? usageAccounting(fetch ?? globalThis.fetch) : null;
       const openai = createOpenAI({
         apiKey: apiKey || kind,
@@ -123,7 +129,15 @@ export function createModel(spec: ModelSpec, options: CreateModelOptions = {}): 
           ? { headers: { 'HTTP-Referer': 'https://github.com/smelld41rr/Vistara-AI-Agent', 'X-Title': 'Vistara AI' } }
           : {}),
         // OpenRouter reports a request's cost in its usage when asked.
-        fetch: accounting?.fetch ?? fetch,
+        fetch:
+          kind === 'openai-compatible'
+            ? async (input, init) => {
+                const expected = openAICompatibleBaseUrl(kind, spec.baseUrl)!;
+                const url = input instanceof Request ? input.url : String(input);
+                if (!url.startsWith(expected + '/')) throw new Error('Endpoint mismatch: credentials were not sent.');
+                return (fetch ?? globalThis.fetch)(input, { ...init, redirect: 'error' });
+              }
+            : (accounting?.fetch ?? fetch),
       });
       return {
         spec,

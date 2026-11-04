@@ -474,5 +474,21 @@
   "models.ollama.testOne": "測試模型",
   "models.ollama.originHint": "只允許此擴充功能的確切來源。變更變數後請重新啟動 Ollama。保持伺服器僅在本機監聽，不要暴露到網際網路。",
   "models.ollama.empty": "已連線：尚未安裝模型。請在 Ollama 中自行下載所需模型，然後重新整理。",
-  "models.ollama.installed": "已安裝的 Ollama 模型"
+  "models.ollama.installed": "已安裝的 Ollama 模型",
+  "models.custom.protocol": "API 協定",
+  "models.custom.protocolHint": "此處僅支援 OpenAI 相容的聊天補全。其他協定需要專用配接器。",
+  "models.custom.testHint": "請輸入供應商的正確模型 ID。測試會傳送少量公開測試請求，可能消耗配額。連線、文字和結構化工具分別檢查；不會執行瀏覽器操作。",
+  "models.custom.connection": "測試連線",
+  "models.custom.text": "測試文字生成",
+  "models.custom.tools": "測試工具呼叫",
+  "models.custom.configured": "已設定 — 需要測試",
+  "models.custom.chatReady": "聊天已就緒",
+  "models.custom.agentReady": "代理已就緒 — 工具和後續回應已測試",
+  "models.custom.failed": "測試失敗",
+  "models.custom.httpWarning": "遠端 HTTP 未加密，金鑰和提示可能被攔截。建議使用 HTTPS；仍支援本機開發。",
+  "models.custom.review": "檢查位址變更",
+  "models.custom.endpointWarning": "變更位址將建立新的供應商識別碼，並刪除舊金鑰和相容性結果。請為新位址重新輸入認證。此變更不會傳送請求。",
+  "models.custom.confirm": "確認變更位址並清除金鑰",
+  "models.custom.invalidUrl": "請輸入 HTTP(S) API 基礎位址，不要包含認證、查詢、片段或 /chat/completions。",
+  "models.custom.addManual": "手動新增模型"
 }

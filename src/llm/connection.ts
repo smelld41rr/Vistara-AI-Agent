@@ -14,6 +14,8 @@ export interface ConnectionResult {
   ok: boolean;
   /** The model answered the one-tool request with a call to that tool. */
   toolCalling: boolean;
+  connected?: boolean;
+  chatReady?: boolean;
   error?: string;
   /** A local server refused the extension's origin: show the OLLAMA_ORIGINS or CORS fix. */
   originRefused?: boolean;
@@ -178,7 +180,7 @@ export async function listModels(
   const get = async (url: string, headers: Record<string, string> = {}) => {
     let response: Response;
     try {
-      response = await fetchFn(url, { headers, signal: AbortSignal.timeout(15_000) });
+      response = await fetchFn(url, { headers, signal: AbortSignal.timeout(15_000), redirect: 'error' });
     } catch (error) {
       throw Object.assign(
         new Error(
@@ -271,6 +273,7 @@ export async function detectContext(
   spec: Pick<ModelSpec, 'kind' | 'baseUrl' | 'modelName'>,
   fetchFn: typeof fetch = fetch,
 ): Promise<number | undefined> {
+  if (spec.kind !== 'ollama' && spec.kind !== 'lmstudio') return undefined;
   const root = (openAICompatibleBaseUrl(spec.kind, spec.baseUrl) ?? '').replace(/\/v1$/, '');
   const json = async (url: string, init?: RequestInit) => {
     try {

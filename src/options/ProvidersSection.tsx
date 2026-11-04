@@ -1,10 +1,13 @@
+import { providerProblem } from './compatible-test';
+import { changeProviderEndpoint, saveProviderKey } from './provider-security';
+import type { DiagnosticMode } from './compatible-test';
 import { ollamaProblem } from './ollama-test';
 // Settings → Providers: the default model and its reasoning effort, then voice input, whose voice model comes from an
 // OpenAI or Gemini provider, then the list of providers with their keys, base URLs and models. Test models calls
 // src/llm from this page; settings are written through chrome.storage, with no worker command.
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { KeyboardEvent, ReactNode } from 'react';
-import { listModels } from '@src/llm';
+import { listModels, normalizeCompatibleUrl, insecureRemoteEndpoint, PROVIDER_PRESETS } from '@src/llm';
 import type { ConnectionResult, ModelList, ProviderKind } from '@src/llm';
 import type { ReasoningEffort } from '@src/llm/catalogue';
 import {
@@ -15,7 +18,6 @@ import {
   LOCAL_KINDS,
   providersStorage,
   settingsStorage,
-  withBaseUrl,
 } from '@src/store/settings';
 import type { ModelEntry, ProviderConfig } from '@src/store/settings';
 import { newId } from '@src/store/conversations';
@@ -36,7 +38,7 @@ export const KINDS: Array<{ kind: ProviderKind; label: string; needsKey: boolean
   { kind: 'openrouter', label: 'OpenRouter', needsKey: true },
   { kind: 'ollama', label: 'Ollama (Local)', needsKey: false, baseUrl: 'http://localhost:11434' },
   { kind: 'lmstudio', label: 'LM Studio', needsKey: false, baseUrl: 'http://localhost:1234' },
-  { kind: 'openai-compatible', label: 'OpenAI-compatible', needsKey: false, baseUrl: '' },
+  { kind: 'openai-compatible', label: 'Custom (OpenAI-compatible)', needsKey: false, baseUrl: '' },
 ];
 
 const EMPTY_PROVIDERS: ProviderConfig[] = [];
@@ -46,11 +48,7 @@ const EMPTY_KEYS: Record<string, string> = {};
  * Presets: cloud endpoints that speak chat completions, added as OpenAI-compatible providers but listed and named as
  * providers of their own.
  */
-const PRESETS: Array<{ id: string; label: string; baseUrl: string }> = [
-  { id: 'xai', label: 'xAI Grok', baseUrl: 'https://api.x.ai/v1' },
-  { id: 'deepseek', label: 'DeepSeek', baseUrl: 'https://api.deepseek.com/v1' },
-  { id: 'mistral', label: 'Mistral', baseUrl: 'https://api.mistral.ai/v1' },
-];
+export const PRESETS = PROVIDER_PRESETS;
 
 /**
  * The Add a provider list: the vendors' own APIs (OpenAI, Anthropic, then Google Gemini), with the presets among them
@@ -307,6 +305,7 @@ function ProviderItem({ provider }: { provider: ProviderConfig }) {
   const keys = useStorage(keysStorage, EMPTY_KEYS);
   const info = kindInfo(provider.kind);
   const local = LOCAL_KINDS.has(provider.kind) || provider.kind === 'openai-compatible';
+  const compatible = provider.kind === 'openai-compatible';
   const [newModel, setNewModel] = useState('');
   const [listed, setListed] = useState<ModelList>({ models: [], hidden: [] });
   const [showAll, setShowAll] = useState(false);
@@ -345,9 +344,11 @@ function ProviderItem({ provider }: { provider: ProviderConfig }) {
       if (asked !== listAsked.current) return;
       setListed({ models: [], hidden: [] });
       setListError(
-        provider.kind === 'ollama'
-          ? { message: ollamaProblem(error), originRefused: !!(error as { originRefused?: boolean }).originRefused }
-          : listProblem(error, local),
+        compatible
+          ? { message: providerProblem(error, (error as { status?: number }).status), originRefused: false }
+          : provider.kind === 'ollama'
+            ? { message: ollamaProblem(error), originRefused: !!(error as { originRefused?: boolean }).originRefused }
+            : listProblem(error, local),
       );
     } finally {
       if (asked === listAsked.current) setListing(false);
@@ -368,14 +369,14 @@ function ProviderItem({ provider }: { provider: ProviderConfig }) {
    * key waits for it. A queued test reads the provider and its key when its turn comes, and is skipped if the address
    * changed since it was queued, so a key never goes to an address it was not tested with.
    */
-  const runTests = (names: string[], mode: 'whole' | 'add') => {
+  const runTests = (names: string[], mode: 'whole' | 'add', diagnostic: DiagnosticMode = 'tools') => {
     void providersStorage.get().then(list => {
       const queuedAt = list.find(p => p.id === provider.id)?.baseUrl ?? '';
-      for (const modelName of names) enqueue(modelName, mode, queuedAt);
+      for (const modelName of names) enqueue(modelName, mode, queuedAt, diagnostic);
     });
   };
 
-  const enqueue = (modelName: string, mode: 'whole' | 'add', queuedAt: string) => {
+  const enqueue = (modelName: string, mode: 'whole' | 'add', queuedAt: string, diagnostic: DiagnosticMode) => {
     setTestingModels(prev => new Set(prev).add(modelName));
     queue.current = queue.current
       .catch(() => {})
@@ -388,9 +389,23 @@ function ProviderItem({ provider }: { provider: ProviderConfig }) {
             (fresh.baseUrl ?? '') === queuedAt &&
             !(needsKey(fresh) && !usedKey)
           ) {
-            const test = await testModel(fresh, modelName, usedKey, mode === 'whole' || wholeTestOnAdd(fresh));
+            const test = await testModel(
+              fresh,
+              modelName,
+              usedKey,
+              mode === 'whole' || wholeTestOnAdd(fresh),
+              diagnostic,
+            );
             const r = test.result;
-            if (r && (await providersStorage.get()).some(p => p.id === fresh.id && (p.baseUrl ?? '') === queuedAt))
+            if (
+              r &&
+              (await providersStorage.get()).some(
+                p =>
+                  p.id === fresh.id &&
+                  (p.baseUrl ?? '') === queuedAt &&
+                  (p.credentialRevision ?? 0) === (fresh.credentialRevision ?? 0),
+              )
+            )
               setResults(prev => ({ ...prev, [modelName]: r }));
             await saveTest(fresh.id, fresh.baseUrl, modelName, test);
           }
@@ -417,13 +432,10 @@ function ProviderItem({ provider }: { provider: ProviderConfig }) {
     );
   };
 
-  // The base URL as it was when its field was entered, to test again on leaving it changed.
-  const urlAtFocus = useRef<string | null>(null);
-
   const keyLabel = needsKey(provider) ? t('models.apiKey') : t('models.apiKeyOptional');
   const problems = provider.models.flatMap(m => {
     const r = results[m.name];
-    return r && !(r.ok && r.toolCalling) ? [{ name: m.name, result: r }] : [];
+    return r && !(r.ok && (r.toolCalling || r.chatReady || r.connected)) ? [{ name: m.name, result: r }] : [];
   });
 
   return (
@@ -464,9 +476,9 @@ function ProviderItem({ provider }: { provider: ProviderConfig }) {
               label={keyLabel}
               saved={key}
               onSave={value =>
-                void keysStorage
-                  .set(k => ({ ...k, [provider.id]: value }))
+                void saveProviderKey(provider.id, provider.baseUrl, value)
                   .then(() => {
+                    setResults({});
                     // An OpenAI-compatible endpoint lists only once it has an address.
                     if (provider.kind !== 'openai-compatible' || provider.baseUrl) void fetchModels(value);
                     runTests(
@@ -474,39 +486,31 @@ function ProviderItem({ provider }: { provider: ProviderConfig }) {
                       'add',
                     );
                   })
+                  .catch(() => setListError({ message: t('models.custom.endpointWarning'), originRefused: false }))
               }
               onClear={() => {
                 // A list still running for the old key is dropped, and its refusal goes with it.
                 listAsked.current++;
                 setListing(false);
                 setListError(null);
-                void keysStorage.set(({ [provider.id]: _cleared, ...rest }) => rest);
+                void saveProviderKey(provider.id, provider.baseUrl, '').catch(() =>
+                  setListError({ message: t('models.custom.endpointWarning'), originRefused: false }),
+                );
               }}
             />
           </Line>
         ) : null}
+        {compatible ? (
+          <Line label={t('models.custom.protocol')}>
+            <Select value="chat-completions" onChange={() => {}}>
+              <option value="chat-completions">OpenAI-compatible Chat Completions</option>
+            </Select>
+            <p className="text-nb-muted">{t('models.custom.protocolHint')}</p>
+          </Line>
+        ) : null}
         {local ? (
           <Line label={t('models.baseUrl')}>
-            <Input
-              aria-label={t('models.baseUrl')}
-              className="w-full sm:max-w-sm"
-              value={provider.baseUrl ?? ''}
-              placeholder={info.baseUrl || 'http://localhost:8000/v1'}
-              onChange={e => {
-                const baseUrl = e.target.value;
-                void providersStorage.set(list => list.map(p => (p.id === provider.id ? withBaseUrl(p, baseUrl) : p)));
-              }}
-              onFocus={() => (urlAtFocus.current = provider.baseUrl ?? '')}
-              onBlur={() => {
-                if (urlAtFocus.current !== null && urlAtFocus.current !== (provider.baseUrl ?? '')) {
-                  runTests(
-                    provider.models.map(m => m.name),
-                    'add',
-                  );
-                }
-                urlAtFocus.current = null;
-              }}
-            />
+            <EndpointField provider={provider} />
           </Line>
         ) : null}
         <Line label={t('models.models')}>
@@ -517,7 +521,8 @@ function ProviderItem({ provider }: { provider: ProviderConfig }) {
                   key={m.name}
                   model={m}
                   localOllama={provider.kind === 'ollama'}
-                  onTest={() => runTests([m.name], 'whole')}
+                  compatible={compatible}
+                  onTest={(diagnostic = 'tools') => runTests([m.name], 'whole', diagnostic)}
                   result={results[m.name]}
                   testing={testingModels.has(m.name)}
                   onRemove={() =>
@@ -559,7 +564,9 @@ function ProviderItem({ provider }: { provider: ProviderConfig }) {
                 <option key={n} value={n} />
               ))}
             </datalist>
-            <Button onClick={() => void addModel(newModel)}>{t('common.add')}</Button>
+            <Button onClick={() => void addModel(newModel)}>
+              {t(compatible ? 'models.custom.addManual' : 'common.add')}
+            </Button>
             <Button variant="ghost" onClick={() => void fetchModels()}>
               {t('models.fetchModels')}
             </Button>
@@ -581,7 +588,7 @@ function ProviderItem({ provider }: { provider: ProviderConfig }) {
           ) : null}
         </Line>
       </div>
-      {provider.kind === 'ollama' ? (
+      {provider.kind === 'ollama' || compatible ? (
         <div className="space-y-2 text-sm">
           <label className="flex flex-wrap items-center gap-2">
             {t('models.ollama.timeout')}
@@ -598,7 +605,7 @@ function ProviderItem({ provider }: { provider: ProviderConfig }) {
               }}
             />
           </label>
-          <p className="text-nb-muted">{t('models.ollama.localHint')}</p>
+          <p className="text-nb-muted">{t(compatible ? 'models.custom.testHint' : 'models.ollama.localHint')}</p>
         </div>
       ) : null}
       {listError ? (
@@ -813,14 +820,16 @@ function ModelChip({
   onRemove,
   onTest,
   localOllama,
+  compatible,
 }: {
   model: ModelEntry;
   result?: ConnectionResult;
   /** A test of this model is running or waiting its turn. */
   testing: boolean;
   onRemove: () => void;
-  onTest: () => void;
+  onTest: (mode?: DiagnosticMode) => void;
   localOllama: boolean;
+  compatible: boolean;
 }) {
   const passed = result?.ok && result.toolCalling;
   return (
@@ -834,13 +843,36 @@ function ModelChip({
       className={`group flex items-center gap-1.5 rounded-lg border py-1 pl-2.5 pr-1 ${model.noToolCalling ? 'border-red-300 dark:border-red-800' : 'border-nb-border'} bg-nb-surface`}>
       {passed ? <CheckIcon size={14} className="text-emerald-600 dark:text-emerald-400" /> : null}
       <span className="font-mono">{model.name}</span>
-      {localOllama ? (
+      {localOllama || compatible ? (
         <span className="text-nb-muted">
-          · {t(model.agentTest?.passed ? 'models.ollama.ready' : 'models.ollama.notReady')}
+          ·{' '}
+          {t(
+            result && !result.ok
+              ? 'models.custom.failed'
+              : model.agentTest?.passed
+                ? 'models.custom.agentReady'
+                : model.chatTest?.passed
+                  ? 'models.custom.chatReady'
+                  : 'models.custom.configured',
+          )}
         </span>
       ) : null}
-      <button type="button" className="text-nb-link underline" disabled={testing} onClick={onTest}>
-        {t('models.ollama.testOne')}
+      {compatible ? (
+        <>
+          <button
+            type="button"
+            disabled={testing}
+            onClick={() => onTest('connection')}
+            className="text-nb-link underline">
+            {t('models.custom.connection')}
+          </button>
+          <button type="button" disabled={testing} onClick={() => onTest('text')} className="text-nb-link underline">
+            {t('models.custom.text')}
+          </button>
+        </>
+      ) : null}
+      <button type="button" className="text-nb-link underline" disabled={testing} onClick={() => onTest('tools')}>
+        {t(compatible ? 'models.custom.tools' : 'models.ollama.testOne')}
       </button>
       {testing ? <span className="text-nb-muted">· {t('models.testing')}</span> : null}
       {!testing && model.noToolCalling ? (
@@ -906,5 +938,60 @@ export function OriginFix({ kind }: { kind: ProviderKind }) {
       </code>
       <p className="mt-2">{t('models.ollama.originHint')}</p>
     </Notice>
+  );
+}
+
+/** Edits are drafts: no storage/network mutation until the user explicitly confirms the reviewed URL. */
+function EndpointField({ provider }: { provider: ProviderConfig }) {
+  const [draft, setDraft] = useState(provider.baseUrl ?? '');
+  const [review, setReview] = useState(false);
+  const [error, setError] = useState('');
+  const changed = draft !== (provider.baseUrl ?? '');
+  const check = () => {
+    try {
+      setDraft(normalizeCompatibleUrl(draft));
+      setError('');
+      setReview(true);
+    } catch {
+      setError(t('models.custom.invalidUrl'));
+    }
+  };
+  return (
+    <div className="space-y-2">
+      <Input
+        aria-label={t('models.baseUrl')}
+        value={draft}
+        className="w-full sm:max-w-md"
+        placeholder="https://provider.example/v1"
+        onChange={e => {
+          setDraft(e.target.value);
+          setReview(false);
+        }}
+      />
+      {insecureRemoteEndpoint(draft) ? <Notice tone="warn">{t('models.custom.httpWarning')}</Notice> : null}
+      {changed && !review ? <Button onClick={check}>{t('models.custom.review')}</Button> : null}
+      {review ? (
+        <Notice tone="warn">
+          <p>{t('models.custom.endpointWarning')}</p>
+          <p className="break-all font-mono">
+            {provider.baseUrl || '(not set)'} → {draft}
+          </p>
+          <div className="mt-2 flex gap-2">
+            <Button
+              onClick={() => {
+                void changeProviderEndpoint(provider.id, draft, true).catch(() =>
+                  setError(t('models.custom.invalidUrl')),
+                );
+              }}>
+              {t('models.custom.confirm')}
+            </Button>
+            <Button variant="ghost" onClick={() => setReview(false)}>
+              {t('common.cancel')}
+            </Button>
+          </div>
+        </Notice>
+      ) : null}
+      {error ? <Notice tone="error">{error}</Notice> : null}
+    </div>
   );
 }

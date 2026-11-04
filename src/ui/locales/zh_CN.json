@@ -474,5 +474,21 @@
   "models.ollama.testOne": "测试模型",
   "models.ollama.originHint": "只允许此扩展的确切来源。更改变量后请重启 Ollama。保持服务器仅在本地监听，不要暴露到互联网。",
   "models.ollama.empty": "已连接：尚未安装模型。请在 Ollama 中自行下载所需模型，然后刷新。",
-  "models.ollama.installed": "已安装的 Ollama 模型"
+  "models.ollama.installed": "已安装的 Ollama 模型",
+  "models.custom.protocol": "API 协议",
+  "models.custom.protocolHint": "此处仅支持 OpenAI 兼容的聊天补全。其他协议需要专用适配器。",
+  "models.custom.testHint": "请输入供应商的准确模型 ID。测试会发送少量公开测试请求，可能消耗配额。连接、文本和结构化工具分别检测；不会执行浏览器操作。",
+  "models.custom.connection": "测试连接",
+  "models.custom.text": "测试文本生成",
+  "models.custom.tools": "测试工具调用",
+  "models.custom.configured": "已配置 — 需要测试",
+  "models.custom.chatReady": "聊天就绪",
+  "models.custom.agentReady": "智能体就绪 — 工具和后续响应已测试",
+  "models.custom.failed": "测试失败",
+  "models.custom.httpWarning": "远程 HTTP 未加密，密钥和提示可能被截获。建议使用 HTTPS；仍支持本机开发。",
+  "models.custom.review": "检查地址变更",
+  "models.custom.endpointWarning": "变更地址将创建新的供应商标识，并删除旧密钥和兼容性结果。请为新地址重新输入凭据。此变更不会发送请求。",
+  "models.custom.confirm": "确认变更地址并清除密钥",
+  "models.custom.invalidUrl": "请输入 HTTP(S) API 基础地址，不要包含凭据、查询、片段或 /chat/completions。",
+  "models.custom.addManual": "手动添加模型"
 }

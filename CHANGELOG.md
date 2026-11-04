@@ -1,3 +1,7 @@
+# Vistara AI 0.3.3
+
+Add six documented compatible-provider presets including NVIDIA NIM. Use existing Chat Completions adapter; separate connection/text/structured-tool diagnostics and tool-result continuation. Confirm endpoint changes, rotate provider identity/clear credentials, guard stale-key diagnostic saves, mask echoed keys, reject invalid custom bases/redirects and avoid silent cross-provider fallback. Preserve Ollama/core engine/UI. See docs/CUSTOM_PROVIDERS_REPORT.md.
+
 # Vistara AI 0.3.2
 
 Reuse full-page Settings tabs and route Providers links. Preserve all provider presets; label Ollama (Local), expose installed models and per-model diagnostics, exact-origin setup help and request timeout. Require installed-model membership plus strict structured click/set diagnostics before Ollama Agent selection. Clear readiness on endpoint changes/failures; retain existing storage subscriptions and settings. No new dependencies/downloads or remote publication. See docs/OLLAMA_SETTINGS_REPORT.md for actual evidence.

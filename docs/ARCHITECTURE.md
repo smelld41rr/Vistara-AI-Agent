@@ -9,3 +9,7 @@ Build-only compatibility correction: the pinned @swc native binding refuses this
 ## Ollama and Settings update (0.3.2)
 
 Existing options entrypoint remains the single standalone settings interface. src/ui/options.ts opens/reuses the exact extension options tab, preserving conversation/run state. Existing storage subscriptions synchronize provider and default-model changes. No second provider adapter: Ollama uses the existing SDK OpenAI-compatible chat-completions path; tags/show/ps retain upstream discovery/context support. The options-only diagnostic adapter validates model-emitted click/set payloads with the public original schemas without browser dispatch. Ollama Agent selection requires a persisted passing test on the configured endpoint. Existing agent/CDP architecture, safety and other providers remain. See OLLAMA_SETUP.md and OLLAMA_SETTINGS_REPORT.md.
+
+## Custom providers 0.3.3
+
+Existing compatible adapter and provider cards are extended with documented presets; no browser engine changes. Options-only diagnostics use original public schemas and the real SDK/stream transport without browser dispatch. Endpoint edits are drafts until confirmation; identity rotation and credential revisions protect key destination and stale test persistence. Protocol selection describes only the implemented Chat Completions path. See CUSTOM_PROVIDERS_REPORT.md and PROVIDER_PRESETS.md.

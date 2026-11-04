@@ -13,3 +13,5 @@ export * from './transcribe';
 export { ScriptedModel } from './scripted';
 export type { ScriptedReply, ScriptedCall } from './scripted';
 export type { ModelMessage } from 'ai';
+
+export * from './provider-presets';

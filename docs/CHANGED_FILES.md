@@ -1,3 +1,7 @@
+# Current 0.3.3 NVIDIA/custom-provider update
+
+See [CUSTOM_PROVIDERS_REPORT.md](CUSTOM_PROVIDERS_REPORT.md) for current changes, verification and limitations. Historical evidence below is preserved.
+
 # Current 0.3.2 Ollama and Settings update
 
 See [OLLAMA_SETTINGS_REPORT.md](OLLAMA_SETTINGS_REPORT.md) for this task’s changes, actual checks and limitations. Historical evidence below is preserved.

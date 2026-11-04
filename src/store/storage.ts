@@ -14,7 +14,7 @@ export interface Storage<D> {
 export function createStorage<D>(
   key: string,
   fallback: D,
-  options: { area?: StorageArea; liveUpdate?: boolean; merge?: (stored: unknown) => D } = {},
+  options: { area?: StorageArea; liveUpdate?: boolean; trustedOnly?: boolean; merge?: (stored: unknown) => D } = {},
 ): Storage<D> {
   const area = options.area ?? 'local';
   let cache: D | null = null;
@@ -23,7 +23,16 @@ export function createStorage<D>(
   const emit = () => listeners.forEach(listener => listener());
   const chromeStorage = () => globalThis.chrome?.storage?.[area];
 
+  let protectedAccess: Promise<void> | undefined;
+  const protect = async () => {
+    const local = chromeStorage();
+    if (options.trustedOnly && local?.setAccessLevel) {
+      protectedAccess ??= local.setAccessLevel({ accessLevel: 'TRUSTED_CONTEXTS' });
+      await protectedAccess;
+    }
+  };
   const get = async (): Promise<D> => {
+    await protect();
     const stored = await chromeStorage()?.get([key]);
     cache = read(stored?.[key]);
     return cache;
@@ -32,6 +41,7 @@ export function createStorage<D>(
   const storage: Storage<D> = {
     get,
     async set(value) {
+      await protect();
       const previous = cache ?? (await get());
       const next =
         typeof value === 'function' ? await (value as (previous: D) => D | Promise<D>)(previous) : (value as D);
